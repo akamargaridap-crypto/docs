@@ -1,0 +1,165 @@
+---
+title: "Start and Manage Conversations with Kira"
+sidebarTitle: "Conversations"
+description: "Learn how to start, continue, and manage multi-turn conversations with Kira using sessions to maintain context across messages."
+---
+
+Kira uses **sessions** to maintain conversation context across multiple messages. Each session acts as a persistent thread — when you send a message within the same session, Kira remembers everything that came before, enabling natural, multi-turn conversations without you having to repeat yourself. Every conversation you build on top of Kira starts with creating a session and ends when you explicitly close it.
+
+## Starting a Conversation
+
+<Steps>
+  <Step title="Create a session">
+    Open a new session by sending a `POST` request to `/sessions`. The API returns a unique `session_id` that you will use for every subsequent message in this conversation.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/sessions \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "agent_id": "agent_abc123"
+      }'
+    ```
+
+    **Response:**
+
+    ```json
+    {
+      "session_id": "sess_7Kx92mPqRt",
+      "agent_id": "agent_abc123",
+      "created_at": "2024-11-15T10:30:00Z",
+      "status": "active"
+    }
+    ```
+  </Step>
+
+  <Step title="Send your first message">
+    Use the `session_id` from the previous step to send an initial message to Kira via `POST /messages`.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/messages \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "session_id": "sess_7Kx92mPqRt",
+        "content": "Hi Kira, can you help me draft a project proposal?"
+      }'
+    ```
+  </Step>
+
+  <Step title="Receive Kira's reply">
+    Kira responds synchronously. The reply is returned directly in the response body.
+
+    ```json
+    {
+      "message_id": "msg_01HZK3",
+      "session_id": "sess_7Kx92mPqRt",
+      "role": "assistant",
+      "content": "Of course! I'd be happy to help you draft a project proposal. To get started, could you tell me a bit about the project — what's its goal, who is the audience, and what's the timeline?",
+      "created_at": "2024-11-15T10:30:05Z"
+    }
+    ```
+  </Step>
+</Steps>
+
+## Continuing a Conversation
+
+To continue an existing conversation, pass the same `session_id` in every subsequent message. Kira automatically recalls the full history of the session, so you never need to re-explain context.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "sess_7Kx92mPqRt",
+    "content": "The project is a mobile app for tracking fitness goals. The audience is our internal engineering team, and we need a proposal ready by end of the month."
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "message_id": "msg_01HZK4",
+  "session_id": "sess_7Kx92mPqRt",
+  "role": "assistant",
+  "content": "Great — here's a draft outline for your proposal: 1. Executive Summary, 2. Problem Statement, 3. Proposed Solution, 4. Technical Approach, 5. Timeline & Milestones, 6. Resource Requirements. Want me to expand on any of these sections?",
+  "created_at": "2024-11-15T10:31:20Z"
+}
+```
+
+Kira retains the context of every message exchanged within the session. You can continue the back-and-forth for as long as needed without re-supplying earlier information.
+
+## Retrieving Conversation History
+
+Fetch the full message thread for any active or completed session by sending a `GET` request to `/sessions/{id}`. This is useful for displaying chat history in your UI or auditing past interactions.
+
+```bash
+curl -X GET https://api.akapeople.ai/v1/sessions/sess_7Kx92mPqRt \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "session_id": "sess_7Kx92mPqRt",
+  "agent_id": "agent_abc123",
+  "status": "active",
+  "created_at": "2024-11-15T10:30:00Z",
+  "messages": [
+    {
+      "message_id": "msg_01HZK3",
+      "role": "user",
+      "content": "Hi Kira, can you help me draft a project proposal?",
+      "created_at": "2024-11-15T10:30:02Z"
+    },
+    {
+      "message_id": "msg_01HZK4",
+      "role": "assistant",
+      "content": "Of course! I'd be happy to help you draft a project proposal...",
+      "created_at": "2024-11-15T10:30:05Z"
+    },
+    {
+      "message_id": "msg_01HZK5",
+      "role": "user",
+      "content": "The project is a mobile app for tracking fitness goals...",
+      "created_at": "2024-11-15T10:31:18Z"
+    },
+    {
+      "message_id": "msg_01HZK6",
+      "role": "assistant",
+      "content": "Great — here's a draft outline for your proposal...",
+      "created_at": "2024-11-15T10:31:20Z"
+    }
+  ]
+}
+```
+
+The `messages` array is ordered chronologically. Each entry includes the `role` (`user` or `assistant`), the message `content`, and a `created_at` timestamp.
+
+## Ending a Conversation
+
+When a conversation is complete, delete the session by sending a `DELETE` request to `/sessions/{id}`. This permanently removes the session and all associated message history from Kira's context.
+
+```bash
+curl -X DELETE https://api.akapeople.ai/v1/sessions/sess_7Kx92mPqRt \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+{
+  "session_id": "sess_7Kx92mPqRt",
+  "deleted": true
+}
+```
+
+<Warning>
+  Deleting a session is **irreversible**. Once deleted, the session's message history cannot be recovered. If you need to retain a record of the conversation, retrieve it using `GET /sessions/{id}` before calling `DELETE`.
+</Warning>
+
+<Tip>
+  Tie your `session_id` values to identifiers that already exist in your system — for example, your internal user ID or support ticket number (e.g., `sess_user_98234` or `sess_ticket_4421`). Meaningful session IDs make it far easier to look up, debug, and audit conversations later without needing to maintain a separate mapping table.
+</Tip>

@@ -1,0 +1,263 @@
+---
+title: "Agents API — Configure Kira's Behavior"
+sidebarTitle: "Agents"
+description: "Create and manage Kira agent configurations that control persona, system prompt, and knowledge base for each use case."
+---
+
+Agents define how Kira behaves. Each agent configuration combines a system prompt, an optional persona, and an optional knowledge base into a reusable blueprint that you attach to sessions. By creating distinct agents for different use cases — a customer support agent, an onboarding assistant, an internal IT helper — you can run multiple specialized versions of Kira under a single account without duplicating your integration.
+
+---
+
+## POST /agents — Create an Agent
+
+Create a new agent configuration. Once created, pass its `id` as the `agent_id` when you create a session to apply this configuration.
+
+```
+POST https://api.akapeople.ai/v1/agents
+```
+
+### Request Headers
+
+<ParamField header="Authorization" type="string" required>
+  Your API key as a Bearer token. Example: `Bearer YOUR_API_KEY`
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+### Request Body
+
+<ParamField body="name" type="string" required>
+  A human-readable display name for this agent. Used to identify the configuration in the dashboard and API responses.
+</ParamField>
+
+<ParamField body="system_prompt" type="string">
+  Instructions that define Kira's baseline behavior and personality for this agent. Use this to set tone, scope, and any rules Kira should follow — for example, "You are a friendly support assistant. Only answer questions about AkaPeople products."
+</ParamField>
+
+<ParamField body="persona_id" type="string">
+  The ID of a persona to apply to this agent. Personas control stylistic traits like name, tone, and avatar. Retrieve available persona IDs from the Personas section of your dashboard.
+</ParamField>
+
+<ParamField body="knowledge_base_id" type="string">
+  The ID of a knowledge base to attach. Kira will retrieve relevant documents from this knowledge base when generating replies, grounding its responses in your content.
+</ParamField>
+
+<ParamField body="language" type="string" default="en">
+  The default language for Kira's responses, as a BCP 47 language tag (e.g., `en`, `fr`, `de`, `es`). Users can override this at the session level.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Support Agent",
+    "system_prompt": "You are a friendly and concise support assistant for AkaPeople. Only answer questions related to AkaPeople products and services. Escalate billing issues by asking the user to contact support@akapeople.ai.",
+    "persona_id": "persona_8bc3def012gh45ij",
+    "knowledge_base_id": "kb_6wx7yz0123abcde4",
+    "language": "en"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+  "name": "Customer Support Agent",
+  "system_prompt": "You are a friendly and concise support assistant for AkaPeople. Only answer questions related to AkaPeople products and services. Escalate billing issues by asking the user to contact support@akapeople.ai.",
+  "persona_id": "persona_8bc3def012gh45ij",
+  "knowledge_base_id": "kb_6wx7yz0123abcde4",
+  "language": "en",
+  "created_at": "2024-06-15T08:00:00Z",
+  "updated_at": "2024-06-15T08:00:00Z"
+}
+```
+
+---
+
+## GET /agents — List Agents
+
+Retrieve all agent configurations in your account.
+
+```
+GET https://api.akapeople.ai/v1/agents
+```
+
+### Example Request
+
+```bash
+curl -X GET https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+      "name": "Customer Support Agent",
+      "persona_id": "persona_8bc3def012gh45ij",
+      "knowledge_base_id": "kb_6wx7yz0123abcde4",
+      "language": "en",
+      "created_at": "2024-06-15T08:00:00Z",
+      "updated_at": "2024-06-15T08:00:00Z"
+    },
+    {
+      "id": "agt_9mnop0qrstuvwx12yzabcd34ef",
+      "name": "Onboarding Assistant",
+      "persona_id": null,
+      "knowledge_base_id": "kb_1fg2hi3456jklmn7",
+      "language": "en",
+      "created_at": "2024-06-14T14:22:10Z",
+      "updated_at": "2024-06-14T14:22:10Z"
+    }
+  ],
+  "has_more": false
+}
+```
+
+---
+
+## GET /agents/{id} — Get an Agent
+
+Fetch the full details of a single agent configuration.
+
+```
+GET https://api.akapeople.ai/v1/agents/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the agent to retrieve.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.akapeople.ai/v1/agents/agt_3pqr7stuvwxy2z01abcdef45gh \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+  "name": "Customer Support Agent",
+  "system_prompt": "You are a friendly and concise support assistant for AkaPeople. Only answer questions related to AkaPeople products and services. Escalate billing issues by asking the user to contact support@akapeople.ai.",
+  "persona_id": "persona_8bc3def012gh45ij",
+  "knowledge_base_id": "kb_6wx7yz0123abcde4",
+  "language": "en",
+  "created_at": "2024-06-15T08:00:00Z",
+  "updated_at": "2024-06-15T08:00:00Z"
+}
+```
+
+---
+
+## PATCH /agents/{id} — Update an Agent
+
+Update one or more fields on an existing agent configuration. Only the fields you include in the request body are changed — all other fields remain unchanged.
+
+```
+PATCH https://api.akapeople.ai/v1/agents/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the agent to update.
+</ParamField>
+
+### Request Body
+
+<ParamField body="name" type="string">
+  A new display name for this agent.
+</ParamField>
+
+<ParamField body="system_prompt" type="string">
+  Updated instructions for Kira's behavior. Replaces the existing system prompt entirely.
+</ParamField>
+
+<ParamField body="persona_id" type="string">
+  A new persona ID to apply to this agent. Pass `null` to remove the current persona.
+</ParamField>
+
+<ParamField body="knowledge_base_id" type="string">
+  A new knowledge base ID to attach. Pass `null` to detach the current knowledge base.
+</ParamField>
+
+<ParamField body="language" type="string">
+  A new default language for this agent's responses.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X PATCH https://api.akapeople.ai/v1/agents/agt_3pqr7stuvwxy2z01abcdef45gh \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Support Agent v2",
+    "system_prompt": "You are a helpful support assistant for AkaPeople. Keep answers under 3 sentences where possible. For billing issues, direct users to support@akapeople.ai.",
+    "language": "en"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+  "name": "Customer Support Agent v2",
+  "system_prompt": "You are a helpful support assistant for AkaPeople. Keep answers under 3 sentences where possible. For billing issues, direct users to support@akapeople.ai.",
+  "persona_id": "persona_8bc3def012gh45ij",
+  "knowledge_base_id": "kb_6wx7yz0123abcde4",
+  "language": "en",
+  "created_at": "2024-06-15T08:00:00Z",
+  "updated_at": "2024-06-15T11:45:30Z"
+}
+```
+
+<Note>
+  Agent updates apply to new sessions only. Any sessions already in progress continue to use the agent configuration that was active when the session was created. To apply the updated configuration to a user, create a new session for them.
+</Note>
+
+---
+
+## DELETE /agents/{id} — Delete an Agent
+
+Permanently remove an agent configuration from your account.
+
+```
+DELETE https://api.akapeople.ai/v1/agents/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the agent to delete.
+</ParamField>
+
+<Warning>
+  Deleting an agent does not affect sessions that were already created with it — those sessions continue to function normally using a snapshot of the configuration at creation time. However, you will no longer be able to create new sessions referencing this agent ID.
+</Warning>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.akapeople.ai/v1/agents/agt_3pqr7stuvwxy2z01abcdef45gh \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Response
+
+A successful deletion returns `204 No Content` with an empty response body.

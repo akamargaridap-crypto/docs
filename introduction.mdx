@@ -1,0 +1,48 @@
+---
+title: "Kira: The AI Agent Built for Real Work"
+sidebarTitle: "Introduction"
+description: "Meet Kira, AkaPeople's AI agent that automates tasks, holds natural conversations, and integrates into your workflows — all through a simple API."
+---
+
+Kira is an AI agent built by AkaPeople to handle the work that slows your team down. Whether you're answering customer questions at scale, automating repetitive business processes, or embedding intelligent conversations directly into your product, Kira gives you a reliable, configurable AI layer that fits into how you already work — without requiring a machine learning background to operate.
+
+## What Kira Can Do
+
+<CardGroup cols={2}>
+  <Card title="Conversational AI" icon="comments">
+    Hold context-aware, multi-turn conversations with users. Kira remembers what was said earlier in a session and responds naturally, making interactions feel fluid and human.
+  </Card>
+  <Card title="Task Automation" icon="bolt">
+    Trigger actions based on conversation outcomes. Connect Kira to your internal tools and let it file tickets, send emails, update records, or kick off workflows automatically.
+  </Card>
+  <Card title="Integrations" icon="plug">
+    Connect Kira to the platforms your team already uses. Use webhooks and the REST API to wire Kira into your CRM, helpdesk, data pipeline, or any custom application.
+  </Card>
+  <Card title="Custom Configuration" icon="sliders">
+    Shape how Kira thinks and speaks. Assign custom personas, upload a knowledge base, and tune the agent's behavior so it represents your brand and understands your domain.
+  </Card>
+</CardGroup>
+
+## How It Works
+
+Kira sits between your users and your systems. Every interaction follows a straightforward path from input to action, making it easy to reason about and build on.
+
+<Steps>
+  <Step title="Send a Message">
+    Your user — or your application — sends a message to Kira through the chat interface or directly via the REST API. Every message belongs to a session, which keeps track of the full conversation history.
+  </Step>
+  <Step title="Kira Processes the Request">
+    Kira loads the agent configuration for that session, consults the connected knowledge base if one is attached, and uses its AI model to generate an accurate, context-aware response. If the message matches an automation trigger, Kira queues the appropriate action at the same time.
+  </Step>
+  <Step title="Respond and Act">
+    Kira delivers its reply back to the caller and, where configured, fires webhooks to notify your downstream systems. Your application receives a structured JSON response it can render, log, or route however you need.
+  </Step>
+</Steps>
+
+## Who Is Kira For?
+
+Kira is designed for teams that need AI to do real work, not just demo well. Customer support teams use Kira to resolve common inquiries instantly and escalate complex cases to human agents. Developers building AI-powered products use Kira's API to add conversational intelligence without training or hosting their own models. Operations and product teams use Kira to automate workflows that currently depend on manual effort — from intake forms to follow-up sequences. If your work involves repetitive communication or decision-routing, Kira is built for you.
+
+<Note>
+  Ready to send your first message? Head to the [Quickstart](/quickstart) to create an account, grab your API key, and have Kira responding in minutes.
+</Note>

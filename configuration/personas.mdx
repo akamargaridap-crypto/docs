@@ -1,0 +1,116 @@
+---
+title: "Configure Custom Personas for Kira"
+sidebarTitle: "Personas"
+description: "Create and manage personas that define Kira's tone, communication style, and personality for different use cases and audiences."
+---
+
+A persona shapes how Kira communicates — its tone, level of formality, and overall style. By assigning a persona to an agent, you ensure that every response feels consistent and appropriate for its audience, whether that's a customer on a support chat or a developer querying an internal tool. Kira ships with a set of built-in personas you can use immediately, and lets you create fully custom personas when you need something more tailored.
+
+---
+
+## Built-in Personas
+
+Kira includes four ready-to-use personas that cover the most common communication styles. Reference them by name when creating or updating an agent.
+
+| Persona Name | Description |
+|---|---|
+| `friendly` | Warm and approachable. Uses casual, conversational language and light humor. Best for consumer-facing products and onboarding flows. |
+| `professional` | Formal tone with concise, structured answers. Avoids slang and colloquialisms. Well-suited for enterprise tools and business communication. |
+| `technical` | Detailed and precise. Comfortable with technical jargon, code snippets, and step-by-step explanations. Ideal for developer-facing agents. |
+| `concise` | Short responses, direct phrasing, minimal elaboration. Prioritizes speed and clarity over depth. Great for quick-answer bots and command interfaces. |
+
+---
+
+## Creating a Custom Persona
+
+When the built-in personas don't quite fit your use case, you can define your own. Custom personas let you specify tone, vocabulary preferences, and example phrases that guide Kira's responses.
+
+<Steps>
+  <Step title="Open Personas settings">
+    In the Kira dashboard, navigate to **Settings → Personas**.
+  </Step>
+  <Step title="Create a new persona">
+    Click **New Persona** to open the persona editor.
+  </Step>
+  <Step title="Fill in the persona details">
+    Provide the following information:
+
+    - **Name** — a short identifier for the persona (for example, `support-empathetic` or `sales-upbeat`). This becomes the value you pass as `persona_id`.
+    - **Tone description** — a plain-language description of how this persona should communicate (for example, *"Empathetic and patient. Always acknowledges the user's frustration before offering a solution."*).
+    - **Example phrases** — two or three sample responses that illustrate the style. Kira uses these as style anchors when generating responses.
+  </Step>
+  <Step title="Save and publish">
+    Click **Save**. Your persona is immediately available to assign to any agent in your workspace.
+  </Step>
+</Steps>
+
+### Creating a Persona via the API
+
+You can also define a persona inline when creating an agent via the API. Pass the persona configuration directly in the `persona` object on `POST /agents`:
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Support Agent",
+    "persona": {
+      "name": "support-empathetic",
+      "tone_description": "Empathetic and patient. Always acknowledges the user'\''s frustration before offering a solution.",
+      "example_phrases": [
+        "I completely understand how frustrating that must be — let'\''s get this sorted for you right away.",
+        "That'\''s a great question. Here'\''s what I recommend..."
+      ]
+    }
+  }'
+```
+
+The API returns the created agent object, including a `persona_id` you can reuse across other agents.
+
+---
+
+## Assigning a Persona to an Agent
+
+To assign an existing persona to an agent, include the `persona_id` field in your `POST /agents` request body. Use either a built-in persona name or the ID of a custom persona you've created.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Customer Support Bot",
+    "persona_id": "support-empathetic",
+    "system_prompt": "You help customers troubleshoot billing issues and account access problems."
+  }'
+```
+
+To update the persona on an existing agent, use `PATCH /agents/{agent_id}` with the new `persona_id`:
+
+```bash
+curl -X PATCH https://api.akapeople.ai/v1/agents/agt_abc123 \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "persona_id": "professional"
+  }'
+```
+
+---
+
+## Persona vs. System Prompt
+
+<Accordion title="What's the difference between a persona and a system prompt?">
+  Personas and system prompts both influence how Kira responds, but they operate at different levels and serve different purposes.
+
+  **Persona** defines the *communication style* — the tone, vocabulary, and personality that color every response. Think of it as the voice Kira uses: formal vs. casual, verbose vs. concise, warm vs. neutral.
+
+  **System prompt** defines *behavioral instructions* — what Kira should do, what it knows, what it must avoid, and how it should handle specific scenarios. Think of it as the job description: "You are a support agent. Always ask for an order number before troubleshooting. Never discuss competitor products."
+
+  The two work together. Kira applies the system prompt to determine *what* to say, then expresses it through the tone and style defined by the persona. For example, the same system prompt attached to a `friendly` persona and a `professional` persona will produce responses with the same factual content but very different phrasing.
+
+  Set your system prompt in the `system_prompt` field when creating or updating an agent. Set the persona in the `persona_id` field. Both can be updated independently at any time.
+</Accordion>
+
+<Tip>
+  Create context-specific personas for different surfaces. For example, use a warm, reassuring persona for customer-facing support agents and a terse, precise persona for internal developer tooling. Keeping personas purpose-built makes them easier to maintain and improves response quality.
+</Tip>

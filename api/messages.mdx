@@ -1,0 +1,154 @@
+---
+title: "Messages API — Send and Receive with Kira"
+sidebarTitle: "Messages"
+description: "POST /messages sends a message to Kira and returns the AI reply. Requires an active session_id and your content."
+---
+
+The Messages API is the core of Kira — every conversation flows through it. Use it to send user messages to an active session and receive AI-generated replies in return. Whether you're building a chat interface, a support bot, or an automated pipeline, every interaction starts with a message.
+
+---
+
+## POST /messages
+
+Send a message to Kira within an existing session. Kira processes the message, considers the full session history for context, and returns a generated reply.
+
+```
+POST https://api.akapeople.ai/v1/messages
+```
+
+### Request Headers
+
+<ParamField header="Authorization" type="string" required>
+  Your API key as a Bearer token. Example: `Bearer YOUR_API_KEY`
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+### Request Body
+
+<ParamField body="session_id" type="string" required>
+  The ID of the session to send the message in. Create a session first using `POST /sessions` if you don't have one.
+</ParamField>
+
+<ParamField body="content" type="string" required>
+  The message text to send to Kira. This is the user's input that Kira will respond to.
+</ParamField>
+
+<ParamField body="role" type="string" default="user">
+  The role of the message sender. For all messages you send to Kira, this should always be `user`. Kira's replies carry the role `assistant`.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+    "content": "What are the steps to reset my password?",
+    "role": "user"
+  }'
+```
+
+### Response Fields
+
+<ResponseField name="id" type="string">
+  The unique identifier for this message.
+</ResponseField>
+
+<ResponseField name="session_id" type="string">
+  The session this message belongs to. Matches the `session_id` you provided in the request.
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  The role of the message author. For Kira's replies this is always `assistant`.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Kira's response text, generated based on your message and the full session context.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp indicating when the message was created. Example: `2024-06-15T10:32:00Z`.
+</ResponseField>
+
+### Example Response
+
+```json
+{
+  "id": "msg_04kw2lrnbqtdyx7p9azsev1cof",
+  "session_id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+  "role": "assistant",
+  "content": "To reset your password, go to the login page and click 'Forgot Password'. Enter your registered email address, and we'll send you a reset link valid for 30 minutes.",
+  "created_at": "2024-06-15T10:32:04Z"
+}
+```
+
+---
+
+## GET /sessions/{id}/messages
+
+Retrieve the full message history for a session. Messages are returned in pages, ordered chronologically from oldest to newest.
+
+```
+GET https://api.akapeople.ai/v1/sessions/{id}/messages
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the session whose messages you want to retrieve.
+</ParamField>
+
+### Query Parameters
+
+<ParamField query="limit" type="integer" default="20">
+  The maximum number of messages to return per page. Accepted range: `1–100`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  A pagination cursor returned from a previous response. Pass this value to retrieve the next page of results.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8r/messages?limit=5" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "msg_01ab2cdxyzpqrst3uvwef4gh56",
+      "session_id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+      "role": "user",
+      "content": "Hi Kira, can you help me?",
+      "created_at": "2024-06-15T10:31:50Z"
+    },
+    {
+      "id": "msg_04kw2lrnbqtdyx7p9azsev1cof",
+      "session_id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+      "role": "assistant",
+      "content": "Of course! What do you need help with today?",
+      "created_at": "2024-06-15T10:31:53Z"
+    }
+  ],
+  "next_cursor": "cur_8fgt2mnopqx9yz",
+  "has_more": true
+}
+```
+
+<Note>
+  Messages are always returned in chronological order — the oldest message appears first. To fetch the next page, pass the `next_cursor` value from the response as the `cursor` query parameter in your next request.
+</Note>
+
+<Tip>
+  A streaming variant is available for `POST /messages`. Set `"stream": true` in your request body to receive Kira's reply as a stream of [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events). Each event carries a partial `content` delta, letting you display responses incrementally as Kira generates them — ideal for chat UIs where perceived speed matters.
+</Tip>

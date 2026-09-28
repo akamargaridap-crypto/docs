@@ -1,0 +1,126 @@
+---
+title: "Integrate Kira into Your Apps and Tools"
+sidebarTitle: "Integrations"
+description: "Connect Kira to your existing apps, embed it in your product, and set up webhooks for real-time events triggered by Kira's activity."
+---
+
+Kira's REST API is designed to slot into any stack. Whether you're building a customer-facing chat interface, an internal operations tool, or a fully automated data pipeline, the same simple pattern applies: your backend calls the Kira API, gets a response, and surfaces that response however your product needs it. You never expose credentials to the client, and you stay in full control of how Kira's output is presented and acted on.
+
+## Embedding Kira in Your Application
+
+The standard integration pattern is a **backend proxy**: your server receives a request from your frontend or another service, forwards it to the Kira API, and returns Kira's response to the caller. This keeps your API key secure, lets you add your own auth and rate-limiting logic, and gives you a place to transform or log responses before they reach users.
+
+The example below shows an Express.js route that acts as a proxy for sending messages to Kira.
+
+```javascript
+// server.js — Node.js / Express
+
+import express from "express";
+import fetch from "node-fetch";
+
+const app = express();
+app.use(express.json());
+
+const KIRA_API_KEY = process.env.KIRA_API_KEY;
+const KIRA_BASE_URL = "https://api.akapeople.ai/v1";
+
+// POST /chat — accepts { sessionId, message } from your frontend
+app.post("/chat", async (req, res) => {
+  const { sessionId, message } = req.body;
+
+  if (!sessionId || !message) {
+    return res.status(400).json({ error: "sessionId and message are required." });
+  }
+
+  try {
+    const kiraResponse = await fetch(`${KIRA_BASE_URL}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${KIRA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        content: message,
+      }),
+    });
+
+    if (!kiraResponse.ok) {
+      const error = await kiraResponse.json();
+      return res.status(kiraResponse.status).json({ error: error.message });
+    }
+
+    const data = await kiraResponse.json();
+
+    // Return only what the frontend needs
+    return res.json({
+      reply: data.content,
+      messageId: data.message_id,
+    });
+  } catch (err) {
+    console.error("Kira API error:", err);
+    return res.status(500).json({ error: "Failed to reach Kira." });
+  }
+});
+
+app.listen(3000, () => console.log("Proxy server running on port 3000"));
+```
+
+Your frontend calls `POST /chat` on your own server — it never touches the Kira API or sees your API key directly.
+
+## Webhook Integrations
+
+Webhooks let Kira push notifications to your server the moment something happens — such as when Kira sends a reply, a session ends, or an automation completes. Instead of polling the API for updates, your endpoint receives an HTTP `POST` request with the event payload in real time.
+
+Set up and manage your webhook endpoints in the [Webhooks](/api/webhooks) section of the API reference. Common use cases include:
+
+- Triggering a follow-up workflow when a session ends
+- Logging Kira's responses to an external analytics service
+- Notifying a team channel when Kira flags a task as complete
+- Syncing conversation data to your CRM on each assistant reply
+
+## Common Integration Patterns
+
+<CardGroup cols={2}>
+  <Card title="Customer Support" icon="headset">
+    Embed Kira as a front-line support chatbot on your website or app. Kira handles common questions, triages tickets, and escalates to a human agent when needed — reducing response times and support volume.
+  </Card>
+  <Card title="Internal Tools" icon="users">
+    Deploy Kira as an internal assistant for your team. Connect it to your knowledge base so employees can ask questions about policies, procedures, or product details and get accurate, instant answers without searching through wikis.
+  </Card>
+  <Card title="Data Extraction" icon="table">
+    Pipe unstructured documents — emails, PDFs, form submissions — through Kira to extract structured fields. Return the output as JSON and feed it directly into your database or downstream systems.
+  </Card>
+  <Card title="Content Generation" icon="pen-nib">
+    Use Kira to produce content at scale: product descriptions, email campaigns, social posts, or report summaries. Pass a template and variables, and Kira returns polished, on-brand copy ready for review or publishing.
+  </Card>
+</CardGroup>
+
+## Authentication in Integrations
+
+Your Kira API key grants full access to your agents, sessions, and data. Treat it with the same care as a database password.
+
+<Warning>
+  **Never expose your API key on the client side.** Do not embed it in frontend JavaScript, mobile apps, or any code that ships to end users. If your key is leaked, an attacker can send unlimited requests under your account. Always proxy Kira API calls through your own backend, where the key is stored as a server-side environment variable.
+</Warning>
+
+The correct pattern looks like this:
+
+```
+[Your Frontend / Mobile App]
+        │
+        │  POST /chat  (your own API, no Kira key)
+        ▼
+[Your Backend Server]
+        │
+        │  POST https://api.akapeople.ai/v1/messages
+        │  Authorization: Bearer $KIRA_API_KEY  (server-side only)
+        ▼
+[Kira API]
+```
+
+Your backend authenticates calls from your own users however you choose (session cookies, JWTs, etc.), then makes authenticated calls to Kira on their behalf. The Kira API key never leaves your server.
+
+<Tip>
+  Store your Kira API key in an environment variable (e.g., `KIRA_API_KEY`) and load it at runtime — never hardcode it in your source files or commit it to version control. Use a secrets manager such as AWS Secrets Manager, HashiCorp Vault, or your hosting platform's built-in secrets store for production deployments.
+</Tip>

@@ -1,0 +1,148 @@
+---
+title: "Kira REST API Reference Overview"
+sidebarTitle: "Overview"
+description: "Kira's REST API lets you integrate AI conversations and automations. Covers base URL, versioning, response formats, and errors."
+---
+
+Kira exposes a REST API at `https://api.akapeople.ai/v1` so you can integrate AI capabilities — including conversations, task automation, and agent management — into any application. This reference covers the foundational concepts you need before diving into individual endpoints: how requests and responses are structured, which HTTP status codes to expect, and how rate limiting and pagination work.
+
+## Base URL
+
+All API endpoints are relative to the following base URL:
+
+```
+https://api.akapeople.ai/v1
+```
+
+For example, to access the messages endpoint, you would send requests to `https://api.akapeople.ai/v1/messages`. Never omit the version segment (`v1`) from your requests.
+
+## Versioning
+
+The current API version is **`v1`**, reflected in the base URL path. AkaPeople uses URL-based versioning to manage changes over time:
+
+- **Breaking changes** — for example, removing a field or changing a response structure — increment the version to `v2`, `v3`, and so on. Your existing integration continues to work on `v1` until that version is deprecated.
+- **Non-breaking changes** — such as adding new optional fields or endpoints — are introduced without a version bump. Build your client to ignore unknown fields so these additions don't break your integration.
+
+<Note>
+  AkaPeople announces version deprecations at least 90 days in advance via email and the developer changelog.
+</Note>
+
+## Request Format
+
+All requests must use JSON for the request body and include the `Content-Type: application/json` header. Pass your API key in the `Authorization` header as a Bearer token (see [Authentication](/api/authentication) for details).
+
+Here is a minimal example of a well-formed API request:
+
+```bash
+curl --request POST \
+  --url https://api.akapeople.ai/v1/messages \
+  --header "Authorization: Bearer YOUR_API_KEY" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "session_id": "sess_abc123",
+    "content": "Hello, Kira!"
+  }'
+```
+
+## Response Format
+
+Every response from the Kira API is JSON. The structure differs slightly between successes and errors.
+
+**Successful response** — returns the requested or created resource directly as a JSON object:
+
+```json
+{
+  "id": "msg_01j9xkz2p4q",
+  "session_id": "sess_abc123",
+  "role": "assistant",
+  "content": "Hi there! How can I help you today?",
+  "created_at": "2024-11-15T10:32:00Z"
+}
+```
+
+**Error response** — returns an `error` object containing a machine-readable `code`, a human-readable `message`, and an optional `details` field with additional context:
+
+```json
+{
+  "error": {
+    "code": "invalid_parameter",
+    "message": "The 'session_id' field is required.",
+    "details": {
+      "field": "session_id"
+    }
+  }
+}
+```
+
+Always check for the presence of the `error` key in your client code to distinguish failures from successes.
+
+## HTTP Status Codes
+
+Kira uses standard HTTP status codes to indicate the outcome of every request.
+
+| Status Code | Name | Meaning |
+|---|---|---|
+| `200` | OK | The request succeeded and the response body contains the result. |
+| `201` | Created | A new resource was successfully created. |
+| `400` | Bad Request | The request contained invalid or missing parameters. |
+| `401` | Unauthorized | The API key is missing or invalid. |
+| `403` | Forbidden | The API key is valid but lacks permission for this action. |
+| `404` | Not Found | The requested resource does not exist. |
+| `429` | Too Many Requests | You have exceeded your rate limit for this API key. |
+| `500` | Internal Server Error | An unexpected error occurred on AkaPeople's servers. |
+
+## Rate Limits
+
+Requests to the Kira API are rate-limited on a per-API-key basis. Every API response includes the following headers so you can track your current usage:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | The maximum number of requests allowed in the current window. |
+| `X-RateLimit-Remaining` | The number of requests remaining in the current window. |
+| `X-RateLimit-Reset` | The Unix timestamp (seconds) at which the current window resets. |
+
+When you exceed your limit, the API returns a `429 Too Many Requests` response. Implement exponential backoff in your client and retry after the timestamp in `X-RateLimit-Reset`.
+
+<Tip>
+  If you consistently hit rate limits, consider batching requests or caching responses to reduce API calls.
+</Tip>
+
+## Pagination
+
+Endpoints that return lists of resources — such as messages or sessions — use cursor-based pagination. Pass the following query parameters to control page size and navigate through results:
+
+| Parameter | Default | Maximum | Description |
+|---|---|---|---|
+| `limit` | `20` | `100` | Number of items to return per page. |
+| `cursor` | — | — | Opaque cursor string from the previous response's `next_cursor` field. |
+
+Paginated responses wrap results in a `data` array alongside a `next_cursor` field. When `next_cursor` is `null`, you have reached the last page.
+
+```json
+{
+  "data": [
+    { "id": "msg_01j9xkz2p4q", "content": "Hello!" },
+    { "id": "msg_01j9xkz2p5r", "content": "How are you?" }
+  ],
+  "next_cursor": "cursor_eyJpZCI6Im1zZ18wMWo5eGt6MnA1ciJ9"
+}
+```
+
+---
+
+<CardGroup cols={2}>
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/api/authentication"
+  >
+    Learn how to generate API keys and authenticate every request to the Kira API.
+  </Card>
+  <Card
+    title="Messages"
+    icon="message"
+    href="/api/messages"
+  >
+    Send and retrieve messages within a Kira session to power conversational AI features.
+  </Card>
+</CardGroup>

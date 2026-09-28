@@ -1,0 +1,187 @@
+---
+title: "Troubleshoot Common Issues with Kira"
+sidebarTitle: "Troubleshooting"
+description: "Diagnose and fix the most common Kira issues: authentication errors, rate limit handling, unexpected responses, and webhook failures."
+---
+
+Most issues with Kira fall into a handful of well-understood categories. This guide walks you through the most common problems — authentication failures, rate limiting, unexpected model behavior, broken webhooks, and session errors — and shows you exactly how to resolve each one.
+
+---
+
+## Authentication Errors
+
+Authentication problems are the most frequent source of API failures. Both errors below stem from an issue with your API key or its associated permissions.
+
+### 401 Unauthorized
+
+A `401` response means your request arrived without a valid API key, or the key has been revoked.
+
+**Common causes:**
+- The `Authorization` header is missing entirely
+- The key is misspelled or contains extra whitespace
+- The key was rotated or deleted in **Settings → API Keys**
+
+**Fix:** Confirm the header is formatted exactly as `Authorization: Bearer <your_api_key>` and that the key shown in your dashboard matches what you're sending.
+
+```bash
+# Correct — Authorization header is present and properly formatted
+curl https://api.akapeople.ai/v1/messages \
+  -H "Authorization: Bearer kira_sk_live_xxxxxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id": "ses_abc123", "content": "Hello"}'
+```
+
+### 403 Forbidden
+
+A `403` response means the API key is valid, but it does not have permission to perform the requested action.
+
+**Common causes:**
+- Your current plan doesn't include the endpoint you're calling (e.g., Enterprise-only features)
+- The key was scoped to read-only access when the action requires write permissions
+
+**Fix:** Check your plan in **Settings → Billing** and confirm the key's permission scope in **Settings → API Keys**. Upgrade your plan or create a new key with broader permissions if needed.
+
+---
+
+## Rate Limit Errors
+
+### 429 Too Many Requests
+
+A `429` response means you've exceeded the message rate limit for your plan (Starter: 100/min, Pro: 500/min). Every `429` response includes a `Retry-After` header that tells you how many seconds to wait before retrying.
+
+**Fix:** Implement exponential backoff in your request loop so that failed requests are retried gracefully without flooding the API.
+
+```python
+import time
+import requests
+
+API_KEY = "kira_sk_live_xxxxxxxxxxxxxxxx"
+BASE_URL = "https://api.akapeople.ai/v1"
+
+def send_message(session_id: str, content: str, max_retries: int = 5):
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {"session_id": session_id, "content": content}
+
+    for attempt in range(max_retries):
+        response = requests.post(f"{BASE_URL}/messages", headers=headers, json=payload)
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 429:
+            retry_after = int(response.headers.get("Retry-After", 2 ** attempt))
+            print(f"Rate limited. Retrying in {retry_after}s (attempt {attempt + 1}/{max_retries})")
+            time.sleep(retry_after)
+            continue
+
+        # Surface any other error immediately
+        response.raise_for_status()
+
+    raise Exception("Max retries exceeded. Request failed.")
+```
+
+<Tip>
+  If you regularly hit rate limits, consider batching low-priority requests or upgrading to the Pro plan for a 5× higher limit. Enterprise customers can negotiate custom limits — contact [support@akapeople.ai](mailto:support@akapeople.ai).
+</Tip>
+
+---
+
+## Message and Response Issues
+
+### Kira gives unexpected or off-topic replies
+
+If Kira's responses feel irrelevant, too generic, or inconsistent with your use case, the root cause is almost always the system prompt or persona configuration.
+
+**Steps to resolve:**
+1. Open your agent in the dashboard and review the **System Prompt** field. Make sure it clearly defines Kira's role, tone, and constraints.
+2. Avoid ambiguous instructions like "be helpful" — instead, be specific: "You are a customer support agent for Acme Corp. Only answer questions about our product catalog."
+3. If you're passing a `persona_id` in your API requests, confirm the persona is active and contains up-to-date instructions.
+
+### Kira doesn't use knowledge base content
+
+If Kira ignores documents you've uploaded to the knowledge base, check the following:
+
+1. **The knowledge base is linked to the agent.** Go to your agent settings and confirm the correct KB is attached under **Knowledge Base**.
+2. **Files finished processing.** Newly uploaded files go through an indexing step. In the dashboard, navigate to the knowledge base and check that each file shows a **Ready** status — not **Processing** or **Failed**.
+3. **The query is relevant.** Knowledge base retrieval is similarity-based. If the user's message doesn't semantically relate to the uploaded content, Kira won't surface it. Test with a direct question that maps clearly to a section of your document.
+
+<Info>
+  If a file shows a **Failed** status, delete it and re-upload. Large files (over 10 MB) or unsupported formats may fail silently. Supported formats include PDF, TXT, DOCX, and Markdown.
+</Info>
+
+---
+
+## Webhook Issues
+
+### Webhooks not arriving
+
+If your registered webhook endpoint isn't receiving events, verify these three things before escalating:
+
+1. **The URL is publicly accessible.** Kira's servers must be able to reach your endpoint over the public internet. `localhost` or private network URLs will never work in production. Use a tool like [ngrok](https://ngrok.com) for local development.
+2. **The endpoint returns HTTP 200.** Kira marks a delivery as failed if your server responds with any non-2xx status code. Check your server logs for errors that might cause it to return a 4xx or 5xx.
+3. **The webhook is registered correctly.** Confirm the endpoint URL and event types in **Settings → Webhooks** in the dashboard.
+
+### Duplicate events
+
+Kira guarantees at-least-once delivery, which means you may occasionally receive the same event more than once during retries. Protect against double-processing by implementing idempotency on your end using the `event_id` field included in every webhook payload.
+
+```python
+processed_events = set()  # Use a persistent store (e.g., Redis or DB) in production
+
+def handle_webhook(payload: dict):
+    event_id = payload["event_id"]
+
+    if event_id in processed_events:
+        print(f"Duplicate event {event_id} — skipping.")
+        return
+
+    processed_events.add(event_id)
+    # Process the event
+    print(f"Handling event {event_id}: {payload['event_type']}")
+```
+
+### Debugging webhooks step by step
+
+<Steps>
+  <Step title="Verify webhook registration">
+    Go to **Settings → Webhooks** in the dashboard. Confirm the endpoint URL is correct and that the relevant event types (e.g., `message.completed`, `session.created`) are enabled.
+  </Step>
+  <Step title="Test your endpoint manually">
+    Use `curl` or a tool like Postman to send a sample POST request to your webhook URL with a mock payload. Confirm your server receives the request and responds with `200 OK` within 10 seconds.
+
+    ```bash
+    curl -X POST https://your-app.example.com/webhooks/kira \
+      -H "Content-Type: application/json" \
+      -d '{"event_id": "evt_test_001", "event_type": "message.completed", "data": {}}'
+    ```
+  </Step>
+  <Step title="Review event logs in the dashboard">
+    Navigate to **Settings → Webhooks → Event Logs**. Each delivery attempt is listed with its timestamp, HTTP status code, and response body. Look for failed attempts and review the error detail to pinpoint the issue.
+  </Step>
+</Steps>
+
+---
+
+## Session Errors
+
+### 404 Not Found on a session
+
+A `404` when referencing a session ID means one of two things:
+
+- **The session was deleted.** Deleted sessions and their message history are permanently removed and cannot be retrieved.
+- **The session expired.** Sessions are automatically purged after **30 days of inactivity**. Once expired, the session ID is no longer valid.
+
+**Fix:** Create a new session with a `POST /sessions` request and update any stored session IDs in your application. If you need longer-lived sessions, send a heartbeat message periodically to reset the inactivity timer.
+
+<Warning>
+  Session expiry is based on **inactivity**, not creation date. A session used daily will remain active indefinitely, while one left idle for 30 days will be deleted automatically. There is no way to recover an expired session's message history.
+</Warning>
+
+---
+
+<Note>
+  If none of the steps above resolve your issue, contact the support team at [support@akapeople.ai](mailto:support@akapeople.ai) or use the in-app chat. Include your account ID, the affected resource ID (session, agent, or webhook), and the full error response. You can also check the [FAQ](/help/faq) for answers to common questions about plans, limits, and data handling.
+</Note>

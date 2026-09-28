@@ -1,0 +1,201 @@
+---
+title: "Automate Tasks and Workflows with Kira"
+sidebarTitle: "Automation"
+description: "Delegate repetitive tasks to Kira, set up automated responses, and build powerful workflow automations using the REST API."
+---
+
+Kira does far more than answer questions. You can give it structured instructions to complete real work — summarizing documents, drafting communications, extracting data, and triggering actions inside your own systems. By calling the Kira API from your server-side code, you can build fully automated workflows that run on a schedule, respond to events, and act on Kira's output without any manual intervention.
+
+## Giving Kira Instructions
+
+The quality of Kira's output depends directly on the clarity of the instruction you provide. Write task prompts the same way you would instruct a capable colleague — be explicit about what you want, the format you expect, and any constraints that apply.
+
+<Tabs>
+  <Tab title="Summarize Text">
+    Pass the content you want condensed along with a clear instruction. Specify length or format constraints to get a consistent, usable result.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/messages \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "session_id": "sess_auto_001",
+        "content": "Summarize the following article in three bullet points, each no longer than one sentence:\n\n[YOUR ARTICLE TEXT HERE]"
+      }'
+    ```
+
+    **Example output from Kira:**
+    ```
+    • Researchers found that daily exercise improves cognitive performance by up to 20%.
+    • The study tracked 1,200 participants over two years across three countries.
+    • Authors recommend at least 30 minutes of aerobic activity per day for sustained benefit.
+    ```
+  </Tab>
+
+  <Tab title="Draft a Reply">
+    Give Kira the original message and any context about tone or relationship, then let it compose a ready-to-send draft.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/messages \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "session_id": "sess_auto_002",
+        "content": "Draft a polite, professional reply to the following email, declining the meeting request and suggesting an async update instead:\n\n\"Hi, are you available for a 30-minute sync on Thursday at 2pm to go over the Q3 numbers?\""
+      }'
+    ```
+
+    **Example output from Kira:**
+    ```
+    Hi,
+
+    Thank you for reaching out. Unfortunately I'm not available for a sync on Thursday,
+    but I'd love to stay in the loop on the Q3 numbers. Would it work to share a brief
+    summary or slide deck async? I'm happy to send back any questions or feedback in writing.
+
+    Best,
+    [Your name]
+    ```
+  </Tab>
+
+  <Tab title="Extract Key Data">
+    Instruct Kira to parse unstructured input and return data in a specific format, such as JSON, making it easy to feed results directly into your application.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/messages \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "session_id": "sess_auto_003",
+        "content": "Extract the following fields from the text below and return them as JSON: name, company, email, and requested_service.\n\nText: \"My name is Sarah Okonkwo, I work at Blueridge Consulting, and I can be reached at s.okonkwo@blueridge.com. We are looking for help with data migration.\""
+      }'
+    ```
+
+    **Example output from Kira:**
+    ```json
+    {
+      "name": "Sarah Okonkwo",
+      "company": "Blueridge Consulting",
+      "email": "s.okonkwo@blueridge.com",
+      "requested_service": "data migration"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Building Automated Workflows
+
+Use the Kira API inside your server-side code to run automations that operate entirely without human input. A typical pattern is to call Kira on a schedule or in response to an event, pass in the relevant context, and then act on the structured response — saving it to a database, sending a notification, or triggering a downstream service.
+
+The example below shows a Python script that runs every morning, fetches the latest support tickets from your system, sends each one to Kira for triage, and logs the result.
+
+```python
+import requests
+import json
+
+KIRA_API_KEY = "YOUR_API_KEY"
+BASE_URL = "https://api.akapeople.ai/v1"
+
+HEADERS = {
+    "Authorization": f"Bearer {KIRA_API_KEY}",
+    "Content-Type": "application/json",
+}
+
+
+def create_session(agent_id: str) -> str:
+    response = requests.post(
+        f"{BASE_URL}/sessions",
+        headers=HEADERS,
+        json={"agent_id": agent_id},
+    )
+    response.raise_for_status()
+    return response.json()["session_id"]
+
+
+def send_message(session_id: str, content: str) -> str:
+    response = requests.post(
+        f"{BASE_URL}/messages",
+        headers=HEADERS,
+        json={"session_id": session_id, "content": content},
+    )
+    response.raise_for_status()
+    return response.json()["content"]
+
+
+def delete_session(session_id: str) -> None:
+    requests.delete(f"{BASE_URL}/sessions/{session_id}", headers=HEADERS)
+
+
+def triage_tickets(tickets: list[dict]) -> None:
+    for ticket in tickets:
+        session_id = create_session(agent_id="agent_support_triage")
+        try:
+            prompt = (
+                f"Classify the following support ticket as one of: billing, technical, "
+                f"account, or general. Then write a one-sentence suggested first response.\n\n"
+                f"Ticket: {ticket['body']}"
+            )
+            result = send_message(session_id, prompt)
+
+            # Act on the result — save to DB, call another service, etc.
+            print(f"Ticket {ticket['id']}: {result}")
+        finally:
+            delete_session(session_id)
+
+
+# Example usage
+tickets = [
+    {"id": "T-1001", "body": "I was charged twice for my subscription this month."},
+    {"id": "T-1002", "body": "The API keeps returning a 500 error on /messages."},
+]
+
+triage_tickets(tickets)
+```
+
+## Using System Prompts
+
+A **system prompt** defines Kira's baseline behavior for every session that uses a given agent. It sets the role, tone, boundaries, and instructions Kira follows before it ever sees a user message. Configure a system prompt when you create an agent via `POST /agents`.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Support Triage Agent",
+    "system_prompt": "You are a support triage assistant for Acme Corp. Your job is to classify incoming support tickets into one of four categories: billing, technical, account, or general. Always respond with the category first, followed by a brief one-sentence suggested reply. Keep your tone professional and empathetic. Do not attempt to resolve issues yourself — only classify and suggest."
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "agent_id": "agent_triage_99",
+  "name": "Support Triage Agent",
+  "system_prompt": "You are a support triage assistant for Acme Corp...",
+  "created_at": "2024-11-15T09:00:00Z"
+}
+```
+
+Every session started against this agent will follow the instructions in the system prompt automatically. You do not need to repeat the instructions in individual messages.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Be Specific" icon="bullseye">
+    Vague prompts produce vague results. State exactly what you want Kira to do, what format to use, and what constraints apply — for example, "Summarize in exactly three bullet points" rather than "Give me a summary."
+  </Card>
+  <Card title="Provide Context" icon="file-lines">
+    Include all the information Kira needs to complete the task in the message itself. If Kira needs to know the user's name, the product in question, or the relevant date range, pass that data explicitly rather than assuming Kira can infer it.
+  </Card>
+  <Card title="Use Sessions for Multi-Step Tasks" icon="list-check">
+    When a task unfolds over several steps — such as iterating on a draft or running a multi-stage analysis — keep all exchanges within a single session. This lets Kira maintain context and produce coherent, consistent results across the full task.
+  </Card>
+  <Card title="Handle Errors Gracefully" icon="shield-check">
+    Always check the HTTP status code of each API response and implement retry logic with exponential backoff for transient failures. Log Kira's raw output before acting on it so you can audit and debug unexpected results in production.
+  </Card>
+</CardGroup>
+
+<Note>
+  Rate limits vary by plan. If your automation sends a high volume of requests, you may need to add delays between calls or upgrade your plan to avoid hitting limits. See the [FAQ](/help/faq) for details on rate limits for your tier.
+</Note>

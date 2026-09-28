@@ -1,0 +1,115 @@
+---
+title: "Build and Manage Kira's Knowledge Base"
+sidebarTitle: "Knowledge Base"
+description: "Upload documents and data to give Kira context about your business, enabling accurate, grounded responses rooted in your content."
+---
+
+The knowledge base lets you teach Kira about your products, policies, and processes. Instead of relying solely on its general training, Kira retrieves relevant passages from your uploaded documents when answering questions — producing responses that are grounded in your actual content. You can attach a knowledge base to any agent, and update it at any time as your documentation evolves.
+
+<Warning>
+  Never upload documents that contain sensitive personal data (such as customer PII, social security numbers, or medical records) or credentials (such as passwords, private keys, or API tokens). All uploaded content is used to generate responses and may surface in agent replies.
+</Warning>
+
+---
+
+## What Goes in a Knowledge Base
+
+A knowledge base is most valuable when it contains structured, factual content that Kira can reference to answer user questions accurately. Good candidates include:
+
+<CardGroup cols={2}>
+  <Card title="Product Documentation" icon="book-open">
+    User guides, feature overviews, setup instructions, and release notes that describe how your product works.
+  </Card>
+  <Card title="FAQs & Support Articles" icon="circle-question">
+    Common questions and their answers, troubleshooting steps, and known issue explanations from your help center.
+  </Card>
+  <Card title="Policies & Compliance Docs" icon="shield-check">
+    Terms of service, privacy policies, refund policies, and internal compliance guidelines.
+  </Card>
+  <Card title="Internal Wikis & Runbooks" icon="file-lines">
+    Process documentation, onboarding materials, and operational runbooks for internal-facing agents.
+  </Card>
+</CardGroup>
+
+<Note>
+  Kira uses **semantic search** over your knowledge base — it understands the meaning and context of your content, not just exact keywords. You don't need to tag or index documents manually; uploading them is enough.
+</Note>
+
+---
+
+## Creating a Knowledge Base
+
+<Steps>
+  <Step title="Open Knowledge Bases settings">
+    In the Kira dashboard, navigate to **Settings → Knowledge Bases**.
+  </Step>
+  <Step title="Create a new knowledge base">
+    Click **New Knowledge Base**. Enter a descriptive name (for example, `Product Docs v2` or `Support Center`) so you can identify it when assigning it to agents.
+  </Step>
+  <Step title="Upload your files">
+    Click **Upload Files** and select one or more documents from your computer. You can upload multiple files in a single batch. Supported formats are listed in the [Supported File Types](#supported-file-types) section below.
+  </Step>
+  <Step title="Save and process">
+    Click **Save**. Kira begins processing and indexing your documents immediately. Large uploads may take a few minutes to become fully available. You'll see a **Ready** status indicator next to each file once processing is complete.
+  </Step>
+</Steps>
+
+---
+
+## Supported File Types
+
+Use the table below to verify your documents meet the format and size requirements before uploading.
+
+| Format | Max File Size | Notes |
+|---|---|---|
+| PDF (`.pdf`) | 10 MB | Text-based PDFs work best. Scanned image-only PDFs are not supported. |
+| Word Document (`.docx`) | 10 MB | Formatted text, tables, and lists are all extracted. Embedded images are ignored. |
+| Plain Text (`.txt`) | 5 MB | UTF-8 encoding required. |
+| Markdown (`.md`) | 5 MB | Markdown formatting is stripped; only the text content is indexed. |
+
+If you have content in an unsupported format, convert it to one of the formats above before uploading. For example, export a Google Doc as a `.docx` or `.pdf` file.
+
+---
+
+## Linking to an Agent
+
+To give an agent access to a knowledge base, set the `knowledge_base_id` field when creating the agent with `POST /agents`:
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Support Agent",
+    "persona_id": "professional",
+    "knowledge_base_id": "kb_xyz789",
+    "system_prompt": "You help customers find answers in our product documentation and support articles."
+  }'
+```
+
+To attach a knowledge base to an existing agent, use `PATCH /agents/{agent_id}`:
+
+```bash
+curl -X PATCH https://api.akapeople.ai/v1/agents/agt_abc123 \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "knowledge_base_id": "kb_xyz789"
+  }'
+```
+
+To detach a knowledge base from an agent without deleting it, set `knowledge_base_id` to `null` in the same `PATCH` request.
+
+---
+
+## Updating the Knowledge Base
+
+Your knowledge base is not static — you can add, replace, or remove documents at any time as your content changes.
+
+To **add new documents**, navigate to **Settings → Knowledge Bases**, open the knowledge base, and upload additional files. New documents are indexed and available within a few minutes.
+
+To **replace an existing document**, delete the old file first, then upload the updated version. Kira immediately stops using the deleted document's content and indexes the new version once processing completes.
+
+To **delete a document**, click the trash icon next to the file in the knowledge base view and confirm the deletion. The document is removed from the index within minutes and will no longer influence agent responses.
+
+Changes to your knowledge base take effect automatically — you do not need to reassign it to agents or redeploy anything. All agents linked to the knowledge base pick up the updated content as soon as indexing completes.

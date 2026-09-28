@@ -1,0 +1,261 @@
+---
+title: "Webhooks API — Receive Real-Time Kira Events"
+sidebarTitle: "Webhooks"
+description: "Register webhook endpoints to receive real-time HTTP notifications when Kira completes a message, or a session ends."
+---
+
+Webhooks let you receive real-time HTTP notifications from Kira the moment something meaningful happens — a reply is generated, a session ends, or an agent is updated. Instead of polling the API for changes, you register a publicly accessible endpoint and Kira pushes event payloads to it automatically. This makes webhooks the right tool for triggering downstream workflows, syncing data, or powering live notifications in your product.
+
+---
+
+## Supported Events
+
+| Event | Description |
+|---|---|
+| `message.completed` | Kira has finished generating a reply to a user message. |
+| `session.created` | A new session was started in your account. |
+| `session.ended` | A session was deleted or expired due to inactivity. |
+| `agent.updated` | An agent configuration was modified via `PATCH /agents/{id}`. |
+
+---
+
+## POST /webhooks — Register a Webhook
+
+Subscribe your endpoint to one or more events. Kira will send a `POST` request to your `url` every time a matching event occurs.
+
+```
+POST https://api.akapeople.ai/v1/webhooks
+```
+
+### Request Headers
+
+<ParamField header="Authorization" type="string" required>
+  Your API key as a Bearer token. Example: `Bearer YOUR_API_KEY`
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+### Request Body
+
+<ParamField body="url" type="string" required>
+  The publicly accessible HTTPS endpoint where Kira should deliver event payloads. Must use `https://` — plain HTTP endpoints are rejected.
+</ParamField>
+
+<ParamField body="events" type="array of strings" required>
+  The list of events this webhook should receive. You can subscribe to one or multiple events. Example: `["message.completed", "session.ended"]`. See the [Supported Events](#supported-events) table for all valid values.
+</ParamField>
+
+<ParamField body="secret" type="string">
+  A secret string used to sign outgoing payloads with HMAC-SHA256. Strongly recommended — without it, you cannot verify that payloads originate from Kira. See [Verifying Webhook Signatures](#verifying-webhook-signatures) below.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.example.com/kira/webhooks",
+    "events": ["message.completed", "session.ended"],
+    "secret": "wh_sec_a1b2c3d4e5f6g7h8i9j0klmnop"
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": "wh_7rst8uvwxy9z01ab2cdefgh3ij",
+  "url": "https://yourapp.example.com/kira/webhooks",
+  "events": ["message.completed", "session.ended"],
+  "created_at": "2024-06-15T12:00:00Z"
+}
+```
+
+---
+
+## GET /webhooks — List Webhooks
+
+Retrieve all registered webhooks for your account.
+
+```
+GET https://api.akapeople.ai/v1/webhooks
+```
+
+### Example Request
+
+```bash
+curl -X GET https://api.akapeople.ai/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "wh_7rst8uvwxy9z01ab2cdefgh3ij",
+      "url": "https://yourapp.example.com/kira/webhooks",
+      "events": ["message.completed", "session.ended"],
+      "created_at": "2024-06-15T12:00:00Z"
+    },
+    {
+      "id": "wh_4klm5nopqr6st7uv8wxyz0abc1",
+      "url": "https://yourapp.example.com/kira/agent-events",
+      "events": ["agent.updated"],
+      "created_at": "2024-06-14T09:30:00Z"
+    }
+  ],
+  "has_more": false
+}
+```
+
+---
+
+## DELETE /webhooks/{id} — Remove a Webhook
+
+Unregister a webhook. Kira immediately stops sending events to the associated endpoint.
+
+```
+DELETE https://api.akapeople.ai/v1/webhooks/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the webhook to remove.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.akapeople.ai/v1/webhooks/wh_7rst8uvwxy9z01ab2cdefgh3ij \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Response
+
+A successful deletion returns `204 No Content` with an empty response body.
+
+---
+
+## Webhook Payload Format
+
+When an event fires, Kira sends a `POST` request to your endpoint with a JSON body. Every payload follows the same top-level structure regardless of event type.
+
+| Field | Type | Description |
+|---|---|---|
+| `event` | string | The name of the event that occurred. |
+| `event_id` | string | A unique ID for this specific event delivery. Use this to deduplicate retried deliveries. |
+| `created_at` | string | ISO 8601 timestamp of when the event was generated. |
+| `data` | object | Event-specific data. Structure varies by event type — see below. |
+
+### Example Payload — `message.completed`
+
+```json
+{
+  "event": "message.completed",
+  "event_id": "evt_2pqrs3tuvw4xyz5ab6cdefgh78",
+  "created_at": "2024-06-15T10:32:04Z",
+  "data": {
+    "session_id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+    "message_id": "msg_04kw2lrnbqtdyx7p9azsev1cof",
+    "content": "To reset your password, go to the login page and click 'Forgot Password'. Enter your registered email address, and we'll send you a reset link valid for 30 minutes."
+  }
+}
+```
+
+---
+
+## Verifying Webhook Signatures
+
+When you register a webhook with a `secret`, Kira signs every outgoing payload using HMAC-SHA256. The signature is included in the `X-Kira-Signature` request header as a hex-encoded string. Verify this signature on your server before processing any payload.
+
+The signature is computed as:
+
+```
+HMAC-SHA256(secret, raw_request_body)
+```
+
+<Warning>
+  Always verify webhook signatures in production. Skipping this check means your endpoint will process any `POST` request sent to it — including forged payloads from bad actors. Use the raw request body (before any JSON parsing) when computing the expected signature.
+</Warning>
+
+### Verification — Python
+
+```python
+import hmac
+import hashlib
+
+def verify_kira_signature(secret: str, raw_body: bytes, signature_header: str) -> bool:
+    expected = hmac.new(
+        secret.encode("utf-8"),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature_header)
+
+
+# Example usage in a Flask route
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+WEBHOOK_SECRET = "wh_sec_a1b2c3d4e5f6g7h8i9j0klmnop"
+
+@app.route("/kira/webhooks", methods=["POST"])
+def handle_webhook():
+    signature = request.headers.get("X-Kira-Signature", "")
+    if not verify_kira_signature(WEBHOOK_SECRET, request.get_data(), signature):
+        abort(403)
+
+    payload = request.get_json()
+    # Process payload...
+    return "", 200
+```
+
+### Verification — Node.js
+
+```javascript
+const crypto = require("crypto");
+
+function verifyKiraSignature(secret, rawBody, signatureHeader) {
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(expected, "hex"),
+    Buffer.from(signatureHeader, "hex")
+  );
+}
+
+// Example usage with Express
+const express = require("express");
+const app = express();
+
+const WEBHOOK_SECRET = "wh_sec_a1b2c3d4e5f6g7h8i9j0klmnop";
+
+app.post(
+  "/kira/webhooks",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signature = req.headers["x-kira-signature"] || "";
+
+    if (!verifyKiraSignature(WEBHOOK_SECRET, req.body, signature)) {
+      return res.status(403).send("Invalid signature");
+    }
+
+    const payload = JSON.parse(req.body);
+    // Process payload...
+    res.status(200).send();
+  }
+);
+```
+
+<Tip>
+  Respond to Kira's webhook request with a `200` status as quickly as possible — ideally within 5 seconds. If your handler does heavy processing (database writes, third-party API calls, queue publishing), acknowledge the request immediately and handle the logic asynchronously. Slow responses cause Kira to retry delivery, which can result in duplicate processing.
+</Tip>

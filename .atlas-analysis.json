@@ -1,13 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "Kira",
+  "projectType": "saas",
+  "projectName": "Kira",
+  "projectDescription": "Kira is an AI agent by AkaPeople that automates tasks, answers questions, and integrates into your workflows.",
   "theme": "luma",
-  "colors": {
-    "primary": "#ef7025",
-    "light": "#eec9bc",
-    "dark": "#4fa1ab"
-  },
-  "favicon": "/favicon.svg",
+  "primaryColor": "#ef7025",
+  "lightColor": "#eec9bc",
+  "darkColor": "#4fa1ab",
   "navigation": {
     "tabs": [
       {
@@ -70,11 +68,22 @@
       }
     ]
   },
-  "navbar": {
-    "primary": {
-      "type": "button",
-      "label": "Get Started",
-      "href": "/quickstart"
-    }
-  }
+  "keyFeatures": [
+    "Conversational AI agent for answering questions and completing tasks",
+    "Workflow automation and task delegation",
+    "Custom personas and tone configuration",
+    "Knowledge base integration for context-aware responses",
+    "Webhook and API access for third-party integrations",
+    "Multi-session conversation management"
+  ],
+  "publicApiSurface": [
+    "POST /messages — send a message to Kira and receive a response",
+    "POST /sessions — create a new conversation session",
+    "GET /sessions/{id} — retrieve session history",
+    "DELETE /sessions/{id} — end and delete a session",
+    "GET /agents — list available agent configurations",
+    "POST /agents — create or configure a custom agent",
+    "POST /webhooks — register a webhook endpoint",
+    "GET /webhooks — list registered webhooks"
+  ]
 }

@@ -1,0 +1,138 @@
+---
+title: "Customize Kira's Behavior and Appearance"
+sidebarTitle: "Customization"
+description: "Personalize Kira with custom personas, system prompts, and a knowledge base to match your brand voice and specific use case."
+---
+
+Kira is designed to be shaped to your needs. Out of the box it's a capable, general-purpose AI agent — but with a few configuration choices you can give it a distinct identity, constrain it to a specific domain, and arm it with the exact knowledge your use case requires. Every customization you apply is scoped to an agent, so you can run multiple differently-configured agents under the same account for different products, teams, or workflows.
+
+## Setting a Persona
+
+A **persona** controls how Kira presents itself — its name, tone, communication style, and personality traits. Personas are pre-built or custom configurations that give Kira a consistent character across every session. You can browse and create personas in the [Personas](/configuration/personas) section of the dashboard.
+
+To apply a persona, pass the `persona_id` when creating an agent via `POST /agents`.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Aria — Customer Support",
+    "persona_id": "persona_friendly_pro"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "agent_id": "agent_cs_001",
+  "name": "Aria — Customer Support",
+  "persona_id": "persona_friendly_pro",
+  "created_at": "2024-11-15T08:00:00Z"
+}
+```
+
+Every session opened against this agent will reflect the selected persona's tone and style automatically.
+
+## Writing a System Prompt
+
+A **system prompt** is the master instruction set that governs Kira's behavior for the lifetime of every session under a given agent. It runs silently before every conversation — users never see it, but Kira follows it precisely. Use the system prompt to define the role Kira plays, the format it should use, the topics it should focus on, and the boundaries it should respect.
+
+**Tips for writing effective system prompts:**
+
+- **Be explicit about the role.** Start with a clear "You are..." statement that defines what Kira is doing and for whom.
+- **Set clear boundaries.** Tell Kira what it should and should not do. If it should never discuss competitors or pricing, say so directly.
+- **Specify output format.** If you need bullet points, JSON, a specific number of sentences, or a particular structure, describe it in the prompt.
+- **Keep it focused.** A tightly scoped system prompt produces more consistent, reliable results than a long, general one.
+
+**Example system prompts:**
+
+```text
+# Concise support agent
+You are a helpful support agent for Acme SaaS. Answer questions about the
+product clearly and concisely. If you don't know the answer, say so and
+offer to escalate to a human agent. Never discuss pricing or make commitments
+on behalf of the company. Respond in plain English, no jargon.
+```
+
+```text
+# Structured data extractor
+You are a data extraction assistant. When given unstructured text, extract
+the requested fields and return them as a valid JSON object. Do not include
+explanations or additional text — return only the JSON. If a field cannot
+be found, set its value to null.
+```
+
+```text
+# Internal knowledge assistant
+You are an internal assistant for the Meridian engineering team. Answer
+questions based only on the information in your knowledge base. If a question
+falls outside your knowledge, say "I don't have that information" rather than
+guessing. Use a professional but friendly tone. Format longer answers with
+clear headings and bullet points.
+```
+
+## Connecting a Knowledge Base
+
+A **knowledge base** is a collection of documents, FAQs, articles, or structured data that you attach to an agent. When a knowledge base is connected, Kira retrieves relevant information from it before responding — making its answers accurate, specific, and grounded in your content rather than general knowledge.
+
+Set up and manage your knowledge bases in the [Knowledge Base](/configuration/knowledge-base) section of the dashboard. Once created, attach one to an agent by passing `knowledge_base_id` in `POST /agents`.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Product Docs Assistant",
+    "knowledge_base_id": "kb_product_docs_v2"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "agent_id": "agent_docs_007",
+  "name": "Product Docs Assistant",
+  "knowledge_base_id": "kb_product_docs_v2",
+  "created_at": "2024-11-15T08:15:00Z"
+}
+```
+
+Kira will now search the attached knowledge base on every turn, grounding its responses in your content.
+
+## Combining Customizations
+
+For a fully tailored agent, set all customization fields together in a single `POST /agents` request. The example below creates an agent with a custom name, a defined persona, a focused system prompt, and a connected knowledge base — the complete configuration for a production-ready assistant.
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/agents \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Ember — Onboarding Assistant",
+    "persona_id": "persona_warm_guide",
+    "system_prompt": "You are Ember, a friendly onboarding assistant for Horizon Software. Your job is to help new users get set up, answer questions about account configuration, and point them to the right resources. Always use a warm, encouraging tone. Keep responses concise — no more than three short paragraphs. If a user asks about billing or legal matters, direct them to the support team.",
+    "knowledge_base_id": "kb_onboarding_docs_v3"
+  }'
+```
+
+**Response:**
+
+```json
+{
+  "agent_id": "agent_onboard_42",
+  "name": "Ember — Onboarding Assistant",
+  "persona_id": "persona_warm_guide",
+  "system_prompt": "You are Ember, a friendly onboarding assistant for Horizon Software...",
+  "knowledge_base_id": "kb_onboarding_docs_v3",
+  "created_at": "2024-11-15T08:30:00Z"
+}
+```
+
+This agent is now fully configured: it has Ember's personality from the persona, consistent behavior from the system prompt, and access to your onboarding content from the knowledge base.
+
+<Tip>
+  Before rolling a customized agent out to real users, test it thoroughly in a dedicated sandbox session. Try edge cases, off-topic questions, and adversarial inputs to make sure the system prompt boundaries hold and the knowledge base returns the responses you expect. Iterating in a sandbox costs nothing and prevents surprises in production.
+</Tip>

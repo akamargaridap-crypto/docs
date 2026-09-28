@@ -1,0 +1,106 @@
+---
+title: "Account and Workspace Settings in Kira"
+sidebarTitle: "Settings"
+description: "Manage your Kira account, API keys, team members, notification preferences, and billing settings all from one central dashboard."
+---
+
+The Kira dashboard gives you full control over your account — from generating API keys and managing team access to configuring notification alerts and reviewing billing usage. Every setting you need to operate Kira in production lives under the **Settings** menu in the top-right corner of the dashboard.
+
+---
+
+## API Keys
+
+API keys authenticate your requests to the Kira REST API. You can create multiple keys to isolate access across environments (for example, a separate key for development and production).
+
+Navigate to **Settings → API Keys** to view all active keys associated with your account.
+
+<Warning>
+  Your full API key is only displayed **once**, immediately after creation. Copy it to a secure location right away — Kira stores only a hashed version and cannot show it again.
+</Warning>
+
+<Steps>
+  <Step title="Open API Keys settings">
+    In the Kira dashboard, click your account avatar in the top-right corner, then select **Settings → API Keys**.
+  </Step>
+  <Step title="Create a new key">
+    Click **New API Key**. Enter a descriptive label (for example, `production-server` or `dev-local`) so you can identify it later.
+  </Step>
+  <Step title="Copy your key">
+    After clicking **Create**, Kira displays your new key. Copy it immediately and store it in a secrets manager or environment variable — you will not be able to retrieve it again.
+  </Step>
+  <Step title="Use the key in requests">
+    Pass the key as a Bearer token in the `Authorization` header of every API request:
+
+    ```bash
+    Authorization: Bearer YOUR_API_KEY
+    ```
+  </Step>
+</Steps>
+
+### Rotating and Revoking Keys
+
+To rotate a key, create a new one, update your application to use it, then delete the old key. To revoke a key immediately, click the **Revoke** button next to it in the API Keys list. Revoking a key invalidates it instantly — any requests using that key will return a `401 Unauthorized` error.
+
+<Tip>
+  Rotate your API keys every 90 days as a security best practice. Set a calendar reminder so the rotation becomes a routine part of your maintenance cycle.
+</Tip>
+
+---
+
+## Team & Members
+
+Invite colleagues to your Kira workspace so they can build, test, and monitor agents without sharing a single account. Navigate to **Settings → Team** to manage your team.
+
+To invite a new member, click **Invite Member**, enter their email address, select a role, and click **Send Invite**. They'll receive an email with a link to join your workspace.
+
+### Roles and Permissions
+
+Each team member is assigned one of three roles. Use the table below to choose the right role for each person.
+
+| Permission | Owner | Admin | Member |
+|---|---|---|---|
+| Manage billing and plan | ✅ | ❌ | ❌ |
+| Invite and remove team members | ✅ | ✅ | ❌ |
+| Create and delete API keys | ✅ | ✅ | ❌ |
+| Create and configure agents | ✅ | ✅ | ✅ |
+| View usage and analytics | ✅ | ✅ | ✅ |
+| Send messages via API | ✅ | ✅ | ✅ |
+| View team member list | ✅ | ✅ | ✅ |
+| Delete the workspace | ✅ | ❌ | ❌ |
+
+Each workspace has exactly one **Owner** (the account that created it). Ownership can be transferred from Settings → Team → Transfer Ownership.
+
+---
+
+## Notification Preferences
+
+Stay informed about important events in your Kira workspace by configuring email notifications. Navigate to **Settings → Notifications** to customize which alerts you receive.
+
+You can enable or disable notifications for the following event categories:
+
+- **Usage milestones** — receive an alert when your workspace crosses 50%, 80%, and 100% of your monthly message or session quota.
+- **API errors** — get notified when your error rate exceeds a configurable threshold (for example, more than 5% of requests returning `5xx` responses in a 10-minute window).
+- **Webhook failures** — receive an alert when a webhook endpoint fails to respond with a `2xx` status after all retry attempts are exhausted.
+- **Team activity** — optional digest of new members joining or leaving the workspace.
+
+Toggle each category on or off individually. You can also specify additional recipient email addresses under **Notification Recipients** to loop in team members who may not have a Kira account.
+
+---
+
+## Billing & Usage
+
+Review your current plan and monitor consumption metrics from **Settings → Billing**.
+
+The Billing page shows your active plan, the current billing period, and the following real-time usage metrics:
+
+- **Messages sent** — total messages processed by Kira agents this billing period.
+- **Sessions created** — total conversation sessions opened across all agents.
+- **API calls** — total requests made to the Kira REST API.
+
+Each metric includes a progress bar showing how much of your plan allowance you have used. Historical usage is available as a downloadable CSV for the past 12 billing periods.
+
+To upgrade or change your plan, click **Upgrade Plan** on the Billing page. Changes take effect immediately and are prorated for the remainder of the billing period.
+
+<Note>
+  For a full comparison of plan features, message limits, and pricing, see the [FAQ](/help/faq). The FAQ also covers overage charges and what happens when you reach your quota.
+</Note>

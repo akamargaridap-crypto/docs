@@ -1,0 +1,137 @@
+---
+title: "Core Concepts: How Kira Organizes Your Work"
+sidebarTitle: "Core Concepts"
+description: "Learn how sessions, messages, agents, personas, knowledge bases, and webhooks work together to power every Kira interaction."
+---
+
+Before you build with Kira, it helps to understand the objects and relationships that structure every interaction. Kira's API is organized around a small set of clear concepts — once you know what each one does and how they connect, the rest of the platform follows naturally.
+
+## Key Concepts
+
+<AccordionGroup>
+  <Accordion title="Sessions" icon="rectangle-history">
+    A **session** is a single conversation thread between a user and Kira. Think of it as a container that holds the full message history for one exchange. Every message you send belongs to exactly one session.
+
+    Sessions are created explicitly with a `POST /sessions` request and remain `active` until you close or delete them. You can retrieve a session at any time to inspect its metadata or replay its message history.
+
+    **Key properties:**
+
+    | Property | Description |
+    |---|---|
+    | `id` | Unique identifier for the session (e.g., `sess_01hx9z...`) |
+    | `status` | `active` or `closed` |
+    | `created_at` | Timestamp of when the session was opened |
+    | `agent_id` | The agent configuration attached to this session, if any |
+
+    Sessions preserve context automatically. When you send message five in a session, Kira has access to messages one through four and can respond coherently without you resending history.
+  </Accordion>
+
+  <Accordion title="Messages" icon="message">
+    A **message** is a single turn in a session — one input from a user or one reply from Kira. Messages are the core unit of communication in the Kira API.
+
+    Every message carries a `role` field that identifies whether it came from the `user` (your application or end user) or the `assistant` (Kira). When you render a conversation UI, use `role` to decide how to display each message.
+
+    **Key properties:**
+
+    | Property | Description |
+    |---|---|
+    | `id` | Unique identifier for the message |
+    | `session_id` | The session this message belongs to |
+    | `role` | `user` or `assistant` |
+    | `content` | The text body of the message |
+    | `created_at` | ISO 8601 timestamp |
+
+    You create `user` messages by posting to `POST /messages`. Kira automatically creates the corresponding `assistant` message and returns it in the same response.
+  </Accordion>
+
+  <Accordion title="Agents" icon="robot">
+    An **agent** is a named configuration that defines how Kira behaves. Every session is associated with an agent, and the agent controls which AI model is used, how Kira should respond, which persona it adopts, and which knowledge base it can draw from.
+
+    You can create multiple agents for different purposes — for example, a customer-facing support agent, an internal operations agent, and a developer-facing technical assistant — each with its own settings.
+
+    **Key properties:**
+
+    | Property | Description |
+    |---|---|
+    | `id` | Unique identifier for the agent |
+    | `name` | A human-readable label for the agent |
+    | `persona_id` | The persona assigned to this agent |
+    | `knowledge_base_id` | The knowledge base this agent can query |
+    | `instructions` | Optional system-level instructions that shape the agent's behavior |
+
+    When you create a session without specifying an `agent_id`, Kira uses your account's default agent.
+  </Accordion>
+
+  <Accordion title="Personas" icon="masks-theater">
+    A **persona** is a named tone and personality profile assigned to an agent. Personas control how Kira expresses itself — its vocabulary, formality, response style, and communication conventions.
+
+    AkaPeople provides a set of built-in personas out of the box:
+
+    - **Friendly** — warm, approachable, and conversational; well-suited for consumer-facing products
+    - **Formal** — precise and professional; ideal for enterprise or legal contexts
+    - **Technical** — concise and detail-oriented; designed for developer tools and technical support
+    - **Supportive** — empathetic and patient; built for healthcare, HR, or sensitive customer situations
+
+    You can also define custom personas with your own description and style guidelines. Assign a persona to an agent and every session that uses that agent will reflect it automatically.
+  </Accordion>
+
+  <Accordion title="Knowledge Base" icon="database">
+    A **knowledge base** is a collection of documents, FAQs, and structured data you upload so that Kira can provide context-aware, accurate answers grounded in your content.
+
+    When a session uses an agent that has a knowledge base attached, Kira automatically searches that knowledge base before generating a response. If relevant content is found, Kira incorporates it into the reply — and won't fabricate information that isn't there.
+
+    **Supported document types:** plain text (`.txt`), Markdown (`.md`), PDF, and JSON.
+
+    Updating your knowledge base is additive — you can upload new documents at any time without rebuilding or retraining. Changes take effect for new messages immediately.
+
+    <Note>
+      Knowledge base search uses semantic similarity, so Kira can match a user's question to relevant content even when the exact wording differs.
+    </Note>
+  </Accordion>
+
+  <Accordion title="Webhooks" icon="webhook">
+    A **webhook** is an HTTP callback that Kira sends to a URL you specify when a particular event occurs. Use webhooks to keep your systems in sync with Kira in real time, without polling the API.
+
+    **Supported events:**
+
+    | Event | Description |
+    |---|---|
+    | `message.received` | Fires when a new user message arrives |
+    | `message.created` | Fires when Kira generates an assistant reply |
+    | `session.started` | Fires when a new session is created |
+    | `session.ended` | Fires when a session is closed |
+    | `action.triggered` | Fires when an automation action is queued |
+
+    Each webhook payload is a JSON object containing the event type, a timestamp, and the full resource object that triggered it. Kira signs every request with an HMAC-SHA256 signature in the `X-Kira-Signature` header so you can verify authenticity on your end.
+
+    Register a webhook by posting to `POST /webhooks` with your target URL and the event types you want to subscribe to.
+  </Accordion>
+</AccordionGroup>
+
+## Data Flow
+
+Understanding how these concepts connect helps you design your integration correctly. Here's how a single user message moves through Kira from start to finish.
+
+<Note>
+  **End-to-end flow for a single message:**
+
+  1. **Your application sends a message** — you post `{"session_id": "...", "content": "..."}` to `POST /messages`
+  2. **Kira loads the agent config** — Kira looks up the agent attached to that session to determine behavior, persona, and AI model settings
+  3. **Kira queries the knowledge base** — if the agent has a knowledge base, Kira performs a semantic search to find content relevant to the message
+  4. **Kira generates a response** — the AI model produces a reply using the agent instructions, persona tone, and any retrieved knowledge base content
+  5. **Kira returns the reply** — the assistant message is returned in the API response so your application can display it immediately
+  6. **Webhooks fire** — if you have a `message.created` webhook registered, Kira sends the event payload to your endpoint asynchronously
+
+  Every step happens automatically. You only need to manage the message request; Kira handles the rest.
+</Note>
+
+## Keep Exploring
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Send your first message to Kira and see the full request-response cycle in action with working code examples.
+  </Card>
+  <Card title="Conversations Guide" icon="message-lines" href="/guides/conversations">
+    Go deeper on managing sessions, paginating message history, and building multi-turn conversation experiences.
+  </Card>
+</CardGroup>

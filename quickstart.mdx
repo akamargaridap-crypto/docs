@@ -1,47 +1,142 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with Kira in Minutes"
+sidebarTitle: "Quickstart"
+description: "Create your account, generate an API key, and send your first message to Kira — everything you need to go from zero to a live AI conversation."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This guide walks you through every step needed to send your first message to Kira. By the end, you'll have a working API key, an active session, and a real response from the Kira agent — ready to build on.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Create Your Account">
+    Go to [https://app.akapeople.ai](https://app.akapeople.ai) and sign up for a free AkaPeople account. Enter your name, email address, and a password, then click **Create Account**.
 
-    ```bash
-    npm install your-package
-    ```
+    Check your inbox for a verification email from AkaPeople and click the confirmation link. Your account won't be active until you verify your email address.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
+  <Step title="Get Your API Key">
+    Once you're logged in, open the **Settings** page from the top-right menu and navigate to the **API Keys** tab. Click **New Key**, give it a descriptive name (for example, `my-first-key`), and click **Generate**.
+
+    Copy the key immediately — it will only be shown once. Store it somewhere secure, such as a password manager or a secrets manager in your infrastructure.
+
+    <Warning>
+      Never commit your API key to source control or expose it in client-side code. Treat it like a password.
+    </Warning>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Create a Session">
+    A session represents a single conversation thread with Kira. Create one by sending a `POST` request to the sessions endpoint. The response returns a `session_id` you'll use for all subsequent messages in that conversation.
 
     ```bash
-    your-cli start
+    curl -X POST https://api.akapeople.ai/v1/sessions \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json"
     ```
+
+    Kira responds with a session object:
+
+    ```json
+    {
+      "id": "sess_01hx9z2kqfmyv3r8nt4e7bwp",
+      "created_at": "2024-05-10T14:22:01Z",
+      "status": "active"
+    }
+    ```
+
+    Save the `id` value — you'll pass it as `session_id` in every message you send.
+  </Step>
+
+  <Step title="Send Your First Message">
+    With your session created, send a message to Kira using the messages endpoint. Include the `session_id` from the previous step and the content you want to send.
+
+    ```bash
+    curl -X POST https://api.akapeople.ai/v1/messages \
+      -H "Authorization: Bearer YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "session_id": "sess_01hx9z2kqfmyv3r8nt4e7bwp",
+        "content": "Hello, Kira!"
+      }'
+    ```
+
+    Kira processes your message and returns a structured response containing the agent's reply.
+  </Step>
+
+  <Step title="Review the Response">
+    A successful message call returns a JSON object with the following fields:
+
+    | Field | Type | Description |
+    |---|---|---|
+    | `id` | string | Unique identifier for this message |
+    | `role` | string | Either `user` or `assistant`, indicating who sent the message |
+    | `content` | string | The text content of the message or Kira's reply |
+    | `created_at` | string | ISO 8601 timestamp of when the message was created |
+
+    Example response:
+
+    ```json
+    {
+      "id": "msg_04jd8a1bnzwq5yt6lx0r3vcm",
+      "role": "assistant",
+      "content": "Hello! I'm Kira. How can I help you today?",
+      "created_at": "2024-05-10T14:22:45Z"
+    }
+    ```
+
+    The `content` field contains Kira's reply. Use the `role` field to distinguish between messages your users sent and responses Kira generated when rendering a conversation UI.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## Send a Message — Multiple Languages
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+Use whichever client fits your stack. Both examples below send the same message request.
+
+<CodeGroup>
+
+```bash curl
+curl -X POST https://api.akapeople.ai/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "sess_01hx9z2kqfmyv3r8nt4e7bwp",
+    "content": "Hello, Kira!"
+  }'
+```
+
+```python Python
+import requests
+
+api_key = "YOUR_API_KEY"
+session_id = "sess_01hx9z2kqfmyv3r8nt4e7bwp"
+
+response = requests.post(
+    "https://api.akapeople.ai/v1/messages",
+    headers={
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "session_id": session_id,
+        "content": "Hello, Kira!",
+    },
+)
+
+data = response.json()
+print(data["content"])  # Kira's reply
+```
+
+</CodeGroup>
+
+<Tip>
+  Store your API key as an environment variable instead of hardcoding it. Set `export KIRA_API_KEY="your-key-here"` in your shell profile, then reference it in code with `os.environ["KIRA_API_KEY"]` (Python) or `process.env.KIRA_API_KEY` (Node.js). This keeps your key out of your codebase and makes it easy to rotate.
 </Tip>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Core Concepts" icon="book-open" href="/core-concepts">
+    Understand sessions, agents, personas, and knowledge bases — the building blocks behind every Kira interaction.
+  </Card>
+  <Card title="Conversations Guide" icon="message-lines" href="/guides/conversations">
+    Learn how to manage multi-turn conversations, retrieve message history, and build rich chat experiences.
+  </Card>
+</CardGroup>

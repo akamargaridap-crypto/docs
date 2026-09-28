@@ -1,0 +1,70 @@
+---
+title: "Frequently Asked Questions About Kira"
+sidebarTitle: "FAQ"
+description: "Find quick answers to common questions about Kira's plans, rate limits, data handling, language support, and core capabilities."
+---
+
+Whether you're just getting started or exploring advanced features, this page covers the most common questions about using Kira. Browse the topics below to find the answers you need — if something isn't covered here, reach out to the support team directly.
+
+<Accordion title="What is Kira?">
+  Kira is an AI agent built by AkaPeople that helps you automate tasks, hold natural conversations, and integrate intelligent capabilities into your existing workflows. You can interact with Kira through the dashboard or programmatically via the REST API, and you can tailor its behavior using custom personas and a knowledge base.
+</Accordion>
+
+<Accordion title="How do I get started?">
+  The fastest way to start using Kira is to follow the [Quickstart guide](/quickstart). It walks you through creating your first session, sending a message, and reviewing the response — all in a few minutes. You'll need an API key, which you can generate from **Settings → API Keys** in the dashboard.
+</Accordion>
+
+<Accordion title="What are Kira's rate limits?">
+  Rate limits depend on your plan:
+
+  | Plan       | Rate Limit             |
+  |------------|------------------------|
+  | Starter    | 100 messages / minute  |
+  | Pro        | 500 messages / minute  |
+  | Enterprise | Custom                 |
+
+  If you exceed your limit, the API returns a `429 Too Many Requests` response with a `Retry-After` header indicating when you can try again. To discuss higher limits or a custom Enterprise arrangement, contact [support@akapeople.ai](mailto:support@akapeople.ai).
+</Accordion>
+
+<Accordion title="What languages does Kira support?">
+  Kira can understand and respond in most major world languages, including Spanish, French, German, Portuguese, Japanese, Chinese, Arabic, and many more. For the most accurate, fluent, and consistent results, English is recommended. If you're building a multilingual product, test your target language thoroughly during development to ensure it meets your quality bar.
+</Accordion>
+
+<Accordion title="How is my data handled?">
+  All messages are transmitted and processed securely over HTTPS. Session message history is stored for **30 days** by default, after which it is automatically purged. Your data is **not** used to train or fine-tune any models without your explicit consent. For full details, refer to the AkaPeople Privacy Policy linked in the dashboard footer.
+</Accordion>
+
+<Accordion title="Can I use Kira for customer-facing products?">
+  Yes. Kira is designed to be embedded in customer-facing applications. Use the REST API to send and receive messages programmatically, and configure a custom persona to give Kira a name, tone, and set of instructions that match your brand. Your end users never need to know the underlying infrastructure — they simply interact with the experience you build on top of Kira.
+</Accordion>
+
+<Accordion title="What happens when I delete a session?">
+  Deleting a session permanently removes all associated message history. This action **cannot be undone** and there is no way to recover the conversation after deletion. If you need to retain message history for compliance or auditing purposes, export or archive session data before deleting it.
+</Accordion>
+
+<Accordion title="Does Kira support file uploads?">
+  Kira's **knowledge base** supports file uploads — you can upload documents, PDFs, and text files that Kira will reference when answering questions. Direct in-message file attachments (e.g., sending a file mid-conversation) are currently on the product roadmap and not yet available. Watch the changelog for updates on when that feature ships.
+</Accordion>
+
+<Accordion title="How do I contact support?">
+  You can reach the AkaPeople support team in two ways:
+
+  - **Email:** [support@akapeople.ai](mailto:support@akapeople.ai)
+  - **In-app chat:** Click the **Help** icon in the bottom-right corner of the dashboard to start a live chat session.
+
+  For bug reports or feature requests, include your account ID, the affected session or agent ID, and any relevant error messages to help the team respond faster.
+</Accordion>
+
+<Accordion title="What plans are available?">
+  Kira is available on three plans:
+
+  - **Starter** — Free tier, ideal for personal projects and exploration
+  - **Pro** — Paid plan with higher rate limits and priority support
+  - **Enterprise** — Custom pricing with dedicated infrastructure, SLA guarantees, and volume discounts
+
+  To view current pricing, feature comparisons, and upgrade options, go to **Settings → Billing** in the dashboard.
+</Accordion>
+
+<Note>
+  Still have questions? Email the support team at [support@akapeople.ai](mailto:support@akapeople.ai) or use the in-app chat from your dashboard. The team typically responds within one business day.
+</Note>

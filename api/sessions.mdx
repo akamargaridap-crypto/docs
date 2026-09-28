@@ -1,0 +1,206 @@
+---
+title: "Sessions API — Manage Conversation Threads"
+sidebarTitle: "Sessions"
+description: "Create, retrieve, and delete Kira conversation sessions. Each session maintains context across multiple messages."
+---
+
+Sessions are the conversation threads that give Kira memory. Every message you send belongs to a session, and Kira uses that session's full history to produce contextually aware replies. Create a session once, then reuse it across as many messages as you need — Kira keeps track of everything in between.
+
+---
+
+## POST /sessions — Create a Session
+
+Start a new conversation session. Once created, use the returned `id` as the `session_id` in every subsequent message you send.
+
+```
+POST https://api.akapeople.ai/v1/sessions
+```
+
+### Request Headers
+
+<ParamField header="Authorization" type="string" required>
+  Your API key as a Bearer token. Example: `Bearer YOUR_API_KEY`
+</ParamField>
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `application/json`.
+</ParamField>
+
+### Request Body
+
+<ParamField body="agent_id" type="string">
+  The ID of the agent configuration to use for this session. If omitted, Kira uses the default agent configured for your account.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Arbitrary key-value pairs you want to attach to the session. Use this to store identifiers from your own system — for example, `user_id` or `channel` — so you can look up or filter sessions later.
+
+  ```json
+  { "user_id": "usr_7x2k9p", "channel": "web-chat" }
+  ```
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X POST https://api.akapeople.ai/v1/sessions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+    "metadata": {
+      "user_id": "usr_7x2k9p",
+      "channel": "web-chat"
+    }
+  }'
+```
+
+### Example Response
+
+```json
+{
+  "id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+  "agent_id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+  "status": "active",
+  "metadata": {
+    "user_id": "usr_7x2k9p",
+    "channel": "web-chat"
+  },
+  "created_at": "2024-06-15T10:31:00Z"
+}
+```
+
+<Tip>
+  Store the returned `id` (your `session_id`) in your own database alongside your user record. Persisting it lets you resume the conversation across page reloads, app restarts, or different devices without losing any context.
+</Tip>
+
+---
+
+## GET /sessions/{id} — Retrieve a Session
+
+Fetch the details of a single session by its ID.
+
+```
+GET https://api.akapeople.ai/v1/sessions/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the session to retrieve.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8r \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+  "agent_id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+  "status": "active",
+  "metadata": {
+    "user_id": "usr_7x2k9p",
+    "channel": "web-chat"
+  },
+  "created_at": "2024-06-15T10:31:00Z"
+}
+```
+
+---
+
+## GET /sessions — List Sessions
+
+Retrieve a paginated list of all sessions in your account. Filter by status to narrow results.
+
+```
+GET https://api.akapeople.ai/v1/sessions
+```
+
+### Query Parameters
+
+<ParamField query="limit" type="integer" default="20">
+  The maximum number of sessions to return per page. Accepted range: `1–100`.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  A pagination cursor from a previous response. Pass this to fetch the next page of results.
+</ParamField>
+
+<ParamField query="status" type="string">
+  Filter sessions by status. Accepted values: `active`, `ended`. Omit to return all sessions regardless of status.
+</ParamField>
+
+### Example Request
+
+```bash
+curl -X GET "https://api.akapeople.ai/v1/sessions?limit=10&status=active" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Example Response
+
+```json
+{
+  "data": [
+    {
+      "id": "sess_01hx9kzqpfbctv3m2n4yjd7e8r",
+      "agent_id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+      "status": "active",
+      "metadata": {
+        "user_id": "usr_7x2k9p",
+        "channel": "web-chat"
+      },
+      "created_at": "2024-06-15T10:31:00Z"
+    },
+    {
+      "id": "sess_09zy8xwvutsrqpon7ml6kj5ih4",
+      "agent_id": "agt_3pqr7stuvwxy2z01abcdef45gh",
+      "status": "active",
+      "metadata": {
+        "user_id": "usr_4m1n2o",
+        "channel": "mobile"
+      },
+      "created_at": "2024-06-15T09:14:22Z"
+    }
+  ],
+  "next_cursor": "cur_5gfhij6klmnop7q",
+  "has_more": true
+}
+```
+
+---
+
+## DELETE /sessions/{id} — Delete a Session
+
+Permanently delete a session and all of its associated messages.
+
+```
+DELETE https://api.akapeople.ai/v1/sessions/{id}
+```
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the session to delete.
+</ParamField>
+
+<Warning>
+  Deleting a session is permanent and cannot be undone. All messages belonging to the session are also deleted. If you need the conversation history, retrieve it with `GET /sessions/{id}/messages` before deleting.
+</Warning>
+
+### Example Request
+
+```bash
+curl -X DELETE https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8r \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Response
+
+A successful deletion returns `204 No Content` with an empty response body.
