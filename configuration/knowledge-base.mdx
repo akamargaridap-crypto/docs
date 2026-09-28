@@ -1,7 +1,7 @@
 ---
-title: "Build and Manage Kira's Knowledge Base"
+title: "Configure Kira Knowledge Base for Grounded Responses"
 sidebarTitle: "Knowledge Base"
-description: "Upload documents and data to give Kira context about your business, enabling accurate, grounded responses rooted in your content."
+description: "Upload your product documentation, FAQs, and policies to a Kira knowledge base so your agent delivers accurate, grounded responses."
 ---
 
 The knowledge base lets you teach Kira about your products, policies, and processes. Instead of relying solely on its general training, Kira retrieves relevant passages from your uploaded documents when answering questions — producing responses that are grounded in your actual content. You can attach a knowledge base to any agent, and update it at any time as your documentation evolves.
@@ -87,18 +87,19 @@ curl -X POST https://api.akapeople.ai/v1/agents \
   }'
 ```
 
-To attach a knowledge base to an existing agent, use `PATCH /agents/{agent_id}`:
+To attach a knowledge base to an existing agent, use `POST /agents` with the `agent_id` of the agent you want to update:
 
 ```bash
-curl -X PATCH https://api.akapeople.ai/v1/agents/agt_abc123 \
+curl -X POST https://api.akapeople.ai/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
+    "agent_id": "agt_abc123",
     "knowledge_base_id": "kb_xyz789"
   }'
 ```
 
-To detach a knowledge base from an agent without deleting it, set `knowledge_base_id` to `null` in the same `PATCH` request.
+To detach a knowledge base from an agent without deleting it, set `knowledge_base_id` to `null` in the same `POST /agents` request.
 
 ---
 

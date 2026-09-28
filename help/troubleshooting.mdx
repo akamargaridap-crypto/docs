@@ -1,7 +1,7 @@
 ---
-title: "Troubleshoot Common Issues with Kira"
+title: "Troubleshoot Kira: Fix Auth, Rate Limits, and Webhooks"
 sidebarTitle: "Troubleshooting"
-description: "Diagnose and fix the most common Kira issues: authentication errors, rate limit handling, unexpected responses, and webhook failures."
+description: "Step-by-step fixes for the most common Kira issues, including authentication failures, rate limiting, webhook errors, and session problems."
 ---
 
 Most issues with Kira fall into a handful of well-understood categories. This guide walks you through the most common problems — authentication failures, rate limiting, unexpected model behavior, broken webhooks, and session errors — and shows you exactly how to resolve each one.
@@ -129,7 +129,7 @@ If your registered webhook endpoint isn't receiving events, verify these three t
 Kira guarantees at-least-once delivery, which means you may occasionally receive the same event more than once during retries. Protect against double-processing by implementing idempotency on your end using the `event_id` field included in every webhook payload.
 
 ```python
-processed_events = set()  # Use a persistent store (e.g., Redis or DB) in production
+processed_events = set()  # Use a persistent store in production to survive restarts
 
 def handle_webhook(payload: dict):
     event_id = payload["event_id"]

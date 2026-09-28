@@ -1,7 +1,7 @@
 ---
-title: "Sessions API — Manage Conversation Threads"
+title: "Kira Sessions API — Create and Manage Conversations"
 sidebarTitle: "Sessions"
-description: "Create, retrieve, and delete Kira conversation sessions. Each session maintains context across multiple messages."
+description: "Use the Sessions API to create conversation threads, retrieve session details and history, list all sessions, and permanently delete sessions when done."
 ---
 
 Sessions are the conversation threads that give Kira memory. Every message you send belongs to a session, and Kira uses that session's full history to produce contextually aware replies. Create a session once, then reuse it across as many messages as you need — Kira keeps track of everything in between.
@@ -55,6 +55,28 @@ curl -X POST https://api.akapeople.ai/v1/sessions \
   }'
 ```
 
+### Response Fields
+
+<ResponseField name="id" type="string">
+  The unique identifier for the session. Use this as `session_id` in all subsequent message requests.
+</ResponseField>
+
+<ResponseField name="agent_id" type="string">
+  The ID of the agent configuration associated with this session.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the session. Either `active` (accepting messages) or `ended` (deleted or expired).
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  The key-value pairs you attached when creating the session.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the session was created.
+</ResponseField>
+
 ### Example Response
 
 ```json
@@ -96,6 +118,28 @@ GET https://api.akapeople.ai/v1/sessions/{id}
 curl -X GET https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8r \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+### Response Fields
+
+<ResponseField name="id" type="string">
+  The unique identifier for the session.
+</ResponseField>
+
+<ResponseField name="agent_id" type="string">
+  The ID of the agent configuration associated with this session.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the session — `active` or `ended`.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  The key-value pairs attached to this session.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the session was created.
+</ResponseField>
 
 ### Example Response
 
@@ -142,6 +186,42 @@ GET https://api.akapeople.ai/v1/sessions
 curl -X GET "https://api.akapeople.ai/v1/sessions?limit=10&status=active" \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+### Response Fields
+
+<ResponseField name="data" type="array">
+  An array of session objects matching the query.
+
+  <Expandable title="Session object fields">
+    <ResponseField name="id" type="string">
+      The unique identifier for the session.
+    </ResponseField>
+
+    <ResponseField name="agent_id" type="string">
+      The ID of the agent configuration associated with this session.
+    </ResponseField>
+
+    <ResponseField name="status" type="string">
+      The current status of the session — `active` or `ended`.
+    </ResponseField>
+
+    <ResponseField name="metadata" type="object">
+      The key-value pairs attached to this session.
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the session was created.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string">
+  A cursor to pass as the `cursor` query parameter to fetch the next page. Present only when `has_more` is `true`.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  Whether there are additional sessions beyond the current page.
+</ResponseField>
 
 ### Example Response
 

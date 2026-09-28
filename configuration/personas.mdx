@@ -1,7 +1,7 @@
 ---
-title: "Configure Custom Personas for Kira"
+title: "Create and Configure Custom Agent Personas in Kira"
 sidebarTitle: "Personas"
-description: "Create and manage personas that define Kira's tone, communication style, and personality for different use cases and audiences."
+description: "Create and manage personas that shape the tone, communication style, and personality that Kira uses when responding to your users."
 ---
 
 A persona shapes how Kira communicates — its tone, level of formality, and overall style. By assigning a persona to an agent, you ensure that every response feels consistent and appropriate for its audience, whether that's a customer on a support chat or a developer querying an internal tool. Kira ships with a set of built-in personas you can use immediately, and lets you create fully custom personas when you need something more tailored.
@@ -84,13 +84,14 @@ curl -X POST https://api.akapeople.ai/v1/agents \
   }'
 ```
 
-To update the persona on an existing agent, use `PATCH /agents/{agent_id}` with the new `persona_id`:
+To reconfigure an existing agent with a different persona, use `POST /agents` and include the `agent_id` of the agent you want to update alongside the new `persona_id`:
 
 ```bash
-curl -X PATCH https://api.akapeople.ai/v1/agents/agt_abc123 \
+curl -X POST https://api.akapeople.ai/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
+    "agent_id": "agt_abc123",
     "persona_id": "professional"
   }'
 ```

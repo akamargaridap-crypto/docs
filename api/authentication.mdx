@@ -1,7 +1,7 @@
 ---
-title: "Authenticate Requests to the Kira API"
+title: "Kira API Authentication: Create, Rotate, and Revoke Keys"
 sidebarTitle: "Authentication"
-description: "Use API keys as Bearer tokens to authenticate every Kira API request; learn how to create, rotate, and secure your keys."
+description: "Learn how to generate Kira API keys, pass them as Bearer tokens in the Authorization header, and follow best practices for key rotation and security."
 ---
 
 Every request to the Kira API must include a valid API key as a Bearer token in the `Authorization` header. Kira uses API keys to identify your account, enforce rate limits, and control access to resources. Without a valid key, every request returns a `401 Unauthorized` response.

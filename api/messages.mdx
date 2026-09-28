@@ -1,10 +1,10 @@
 ---
-title: "Messages API — Send and Receive with Kira"
+title: "Kira Messages API — Send Messages and Get AI Replies"
 sidebarTitle: "Messages"
-description: "POST /messages sends a message to Kira and returns the AI reply. Requires an active session_id and your content."
+description: "Use the Messages API to send user messages to Kira within a session and receive AI-generated replies. Supports streaming and full history retrieval."
 ---
 
-The Messages API is the core of Kira — every conversation flows through it. Use it to send user messages to an active session and receive AI-generated replies in return. Whether you're building a chat interface, a support bot, or an automated pipeline, every interaction starts with a message.
+The Messages API is the core of every Kira interaction. Send a user message to an active session and receive Kira's AI-generated reply — with full session context applied to every response. You can also retrieve the complete message history for any session, and optionally stream replies token-by-token for a real-time chat experience.
 
 ---
 
@@ -38,6 +38,10 @@ POST https://api.akapeople.ai/v1/messages
 
 <ParamField body="role" type="string" default="user">
   The role of the message sender. For all messages you send to Kira, this should always be `user`. Kira's replies carry the role `assistant`.
+</ParamField>
+
+<ParamField body="stream" type="boolean" default="false">
+  Set to `true` to receive Kira's reply as a stream of server-sent events (SSE). Each event carries a partial `content` delta, letting you display responses incrementally as Kira generates them — ideal for chat UIs where perceived speed matters.
 </ParamField>
 
 ### Example Request
@@ -120,6 +124,42 @@ curl -X GET "https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
+### Response Fields
+
+<ResponseField name="data" type="array">
+  An array of message objects belonging to the session, ordered from oldest to newest.
+
+  <Expandable title="Message object fields">
+    <ResponseField name="id" type="string">
+      The unique identifier for the message.
+    </ResponseField>
+
+    <ResponseField name="session_id" type="string">
+      The ID of the session this message belongs to.
+    </ResponseField>
+
+    <ResponseField name="role" type="string">
+      The role of the message author — either `user` or `assistant`.
+    </ResponseField>
+
+    <ResponseField name="content" type="string">
+      The text content of the message.
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the message was created.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="next_cursor" type="string">
+  A cursor to pass as the `cursor` query parameter to retrieve the next page of results. Present only when `has_more` is `true`.
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  Whether there are additional messages beyond the current page.
+</ResponseField>
+
 ### Example Response
 
 ```json
@@ -150,5 +190,5 @@ curl -X GET "https://api.akapeople.ai/v1/sessions/sess_01hx9kzqpfbctv3m2n4yjd7e8
 </Note>
 
 <Tip>
-  A streaming variant is available for `POST /messages`. Set `"stream": true` in your request body to receive Kira's reply as a stream of [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events). Each event carries a partial `content` delta, letting you display responses incrementally as Kira generates them — ideal for chat UIs where perceived speed matters.
+  To stream Kira's reply in real time, set `"stream": true` in your `POST /messages` request body. Kira will respond with a stream of [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events), where each event carries a partial `content` delta — ideal for chat UIs where perceived speed matters.
 </Tip>

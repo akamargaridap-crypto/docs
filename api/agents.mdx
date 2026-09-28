@@ -1,7 +1,7 @@
 ---
-title: "Agents API — Configure Kira's Behavior"
+title: "Kira Agents API — Build and Manage Agent Configurations"
 sidebarTitle: "Agents"
-description: "Create and manage Kira agent configurations that control persona, system prompt, and knowledge base for each use case."
+description: "Use the Agents API to create, update, retrieve, list, and delete agent configurations that define Kira's persona, instructions, and knowledge base."
 ---
 
 Agents define how Kira behaves. Each agent configuration combines a system prompt, an optional persona, and an optional knowledge base into a reusable blueprint that you attach to sessions. By creating distinct agents for different use cases — a customer support agent, an onboarding assistant, an internal IT helper — you can run multiple specialized versions of Kira under a single account without duplicating your integration.
@@ -63,6 +63,40 @@ curl -X POST https://api.akapeople.ai/v1/agents \
   }'
 ```
 
+### Response Fields
+
+<ResponseField name="id" type="string">
+  The unique identifier for the agent configuration. Use this as `agent_id` when creating sessions.
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  The display name of the agent.
+</ResponseField>
+
+<ResponseField name="system_prompt" type="string">
+  The instructions that govern Kira's behavior for this agent.
+</ResponseField>
+
+<ResponseField name="persona_id" type="string">
+  The ID of the persona attached to this agent, or `null` if none is set.
+</ResponseField>
+
+<ResponseField name="knowledge_base_id" type="string">
+  The ID of the knowledge base attached to this agent, or `null` if none is set.
+</ResponseField>
+
+<ResponseField name="language" type="string">
+  The default language tag for this agent's responses.
+</ResponseField>
+
+<ResponseField name="created_at" type="string">
+  ISO 8601 timestamp of when the agent was created.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of the most recent update to this agent.
+</ResponseField>
+
 ### Example Response
 
 ```json
@@ -94,6 +128,46 @@ GET https://api.akapeople.ai/v1/agents
 curl -X GET https://api.akapeople.ai/v1/agents \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
+
+### Response Fields
+
+<ResponseField name="data" type="array">
+  An array of agent configuration objects.
+
+  <Expandable title="Agent object fields">
+    <ResponseField name="id" type="string">
+      The unique identifier for the agent.
+    </ResponseField>
+
+    <ResponseField name="name" type="string">
+      The display name of the agent.
+    </ResponseField>
+
+    <ResponseField name="persona_id" type="string">
+      The ID of the persona attached to this agent, or `null`.
+    </ResponseField>
+
+    <ResponseField name="knowledge_base_id" type="string">
+      The ID of the knowledge base attached to this agent, or `null`.
+    </ResponseField>
+
+    <ResponseField name="language" type="string">
+      The default language tag for this agent's responses.
+    </ResponseField>
+
+    <ResponseField name="created_at" type="string">
+      ISO 8601 timestamp of when the agent was created.
+    </ResponseField>
+
+    <ResponseField name="updated_at" type="string">
+      ISO 8601 timestamp of the most recent update to this agent.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="has_more" type="boolean">
+  Whether there are additional agents beyond the current page.
+</ResponseField>
 
 ### Example Response
 

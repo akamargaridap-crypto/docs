@@ -1,7 +1,7 @@
 ---
-title: "Kira REST API Reference Overview"
+title: "Kira REST API Overview: Requests, Errors, and Limits"
 sidebarTitle: "Overview"
-description: "Kira's REST API lets you integrate AI conversations and automations. Covers base URL, versioning, response formats, and errors."
+description: "Learn the Kira REST API base URL, versioning strategy, request and response formats, HTTP status codes, rate limiting, and pagination conventions."
 ---
 
 Kira exposes a REST API at `https://api.akapeople.ai/v1` so you can integrate AI capabilities — including conversations, task automation, and agent management — into any application. This reference covers the foundational concepts you need before diving into individual endpoints: how requests and responses are structured, which HTTP status codes to expect, and how rate limiting and pagination work.
@@ -144,5 +144,26 @@ Paginated responses wrap results in a `data` array alongside a `next_cursor` fie
     href="/api/messages"
   >
     Send and retrieve messages within a Kira session to power conversational AI features.
+  </Card>
+  <Card
+    title="Sessions"
+    icon="comments"
+    href="/api/sessions"
+  >
+    Create, retrieve, and delete conversation sessions to manage multi-turn interactions with Kira.
+  </Card>
+  <Card
+    title="Agents"
+    icon="robot"
+    href="/api/agents"
+  >
+    List available agent configurations and create or configure custom agents for your use case.
+  </Card>
+  <Card
+    title="Webhooks"
+    icon="webhook"
+    href="/api/webhooks"
+  >
+    Register and manage webhook endpoints to receive real-time event notifications from Kira.
   </Card>
 </CardGroup>
